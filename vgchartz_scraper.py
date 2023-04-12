@@ -8,8 +8,8 @@ import datetime
 import time
 
 # Parameters to set for amount of results
-pages = 1
-results_per_page = 5
+pages = 15
+results_per_page = 1000
 
 # The total results
 total_results = pages * results_per_page
