@@ -12,6 +12,9 @@ import time
 pages = 15
 results_per_page = 1000
 
+# Set to true if you want to use full dates instead of just the years
+full_date = False
+
 # Accepted games
 accepted_games = 0
 
@@ -90,12 +93,16 @@ def date_covert(str):
             year = "19" + year
         else:
             year = "20" + year
-        # Combine into new string
-        strs = year + "-" + month + "-" + day[:-2]
         # Convert into python date
-        date = datetime.datetime.strptime(strs, "%Y-%b-%d").date()
-        # Finish by converting to numpy date
-        result = np.datetime64(date)
+        if full_date == True:
+            # Combine into new string
+            strs = year + "-" + month + "-" + day[:-2]
+            # Convert into python date
+            date = datetime.datetime.strptime(strs, "%Y-%b-%d").date()
+            # Finish by converting to numpy date
+            result = np.datetime64(date)
+        else:
+            result = year
     return result
 
 
@@ -256,8 +263,9 @@ def get_games():
 
 # Writing Output Files
 def write_output():
-    # Write the df to csv
-    df.to_csv("raw.csv", sep=",", encoding="utf-8", index=False)
+    # Write the df to csv (using utf-16 instead of utf-8 because some characters weren't working with utf-8)
+    df.replace([np.nan, "nan"], "N/A", inplace=True)
+    df.to_csv("raw.csv", sep="\t", encoding="utf-16", index=False, na_rep="N/A")
     # Write simple statistics to text file
     with open("stats.txt", "w") as f:
         f.write(output_string)
