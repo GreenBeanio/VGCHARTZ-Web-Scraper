@@ -38,4 +38,4 @@ Shout-out to [Gregory Smith](https://github.com/GregorUT) for making the origina
 - Running Without Terminal Staying Around
     - Run the file with nohup
     - May have to set executable if it's not already
-        - chmod +x Pomodoro_Alerts.py
+        - chmod +x vgchartz_scraper.py
