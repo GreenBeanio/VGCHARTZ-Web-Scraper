@@ -21,6 +21,7 @@ accepted_games = 0
 # The total results
 total_results = pages * results_per_page
 
+# String for holding the output text
 output_string = ""
 
 # URL Strings
@@ -124,6 +125,11 @@ def get_genre(str):
     return result
 
 
+# Function get games list
+def get_games_list():
+    pass
+
+
 # Function to get games
 def get_games():
     # Global variables
@@ -132,13 +138,15 @@ def get_games():
     # Running totals
     elapsed_pages = 0
     elapsed_games = 0
+    # Track if it crashed
+    crashed = False
     # Getting start time
     total_start_time = time.time()
     # Loop for every page you want to search
     for page in range(1, pages + 1):
         # Getting time
         page_start_time = time.time()
-        # Elapse Page
+        # Elapse Page (Pretty sure this could just be page, it's not like the games ocunter, oh well doesn't really matter)
         elapsed_pages += 1
         # Getting current url to search
         url = (
@@ -149,14 +157,51 @@ def get_games():
             + str(results_per_page)
             + url_tail
         )
-        # Get the url information
-        r = requests.get(url)
-        # Beautiful soup the requested information
-        soup = BeautifulSoup(r.content, "html5lib")
-        # Storing the main reults in the main table
-        main_table = soup.find("div", attrs={"id": "generalBody"})
-        # Finding hyperlinks in the table
-        all_hyperlinks = main_table.find_all("a")
+
+        # Track number of attempts and if it worked
+        attempt = 1
+        worked = False
+        # Max number of attempts is 3 in this case (change it if you want more chances)
+        while attempt <= 3:
+            # Increase attempt
+            attempt += 1
+            # Try to get information from the website
+            try:
+                # Get the url information
+                r = requests.get(url)
+                # Beautiful soup the requested information
+                soup = BeautifulSoup(r.content, "html5lib")
+                # Storing the main reults in the main table
+                main_table = soup.find("div", attrs={"id": "generalBody"})
+                # Finding hyperlinks in the table
+                all_hyperlinks = main_table.find_all("a")
+                # Set attempt to 4
+                attempt = 4
+                # Set worked to true
+                # worked = True
+            except:
+                output_string = f"Error getting information from page {elapsed_pages}"
+                # Write to log
+                write_output(False)
+                # Print error
+                print(output_string)
+        # When the while loop finishes
+        else:
+            # If it didn't work break, if it did work continue on
+            if worked == False:
+                # Set crashed
+                crashed = True
+                # Write error that the scraper stopped working
+                crash = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
+                output_string = f"======================================================================================================================================================\n\
+                                The scrape of VGCHARTZ has broken at {crash}\
+                                \n======================================================================================================================================================"
+                write_output(False)
+                # Print the output
+                print(output_string)
+                # Break out of the meain page for loop
+                break
+
         # Finding hyperlinks that contain games
         game_hyperlinks = []
         for i in all_hyperlinks:
@@ -166,6 +211,8 @@ def get_games():
 
         # Getting stats for each game
         for game in game_hyperlinks:
+            # Track if game is kept
+            kept_game = False
             # Get game start time
             game_start_time = time.time()
             # Elapse game
@@ -177,6 +224,8 @@ def get_games():
             # Checking if the platform is one of the platform types I don't want ("Series" and "All". They're not useful to analyze individual video games)
             # If the data isn't a "Series" or "All" continue, if not then just skip it
             if ("Series" not in platform) and ("All" not in platform):
+                # Note that it was kept
+                kept_game = True
                 # Get position based on when it was accepted (can't use position from the data set anymore because it's tainted)
                 accepted_games += 1
                 # rank = parent_information[0].string.strip()
@@ -255,19 +304,41 @@ def get_games():
                 "%H:%M:%S", time.gmtime(total_elapsed_time)
             )
             # Output string
-            output_string = f"Page: {elapsed_pages}/{pages}\nGame: {elapsed_games}/{total_results}\nKept Games: {accepted_games}\{elapsed_games}\nTotal Elapsed: {elapsed_total_print}"
-            currentstring = f"Page: {elapsed_pages}/{pages} | Game: {elapsed_games}/{total_results} | Kept Games: {accepted_games}\{elapsed_games} | Game Took: {elapsed_game_print} | Page: Took: {elapsed_page_print} | Total Elapsed: {elapsed_total_print}"
+            output_string = f"Page: {elapsed_pages}/{pages} | Game: {elapsed_games}/{total_results} | Kept Games: {accepted_games}\{elapsed_games} | Game Took: {elapsed_game_print} | Page: Took: {elapsed_page_print} | Total Elapsed: {elapsed_total_print}"
+            # Write to log
+            if kept_game == True:
+                # Write to csv if the game was kept
+                write_output(True)
+            else:
+                # Only write to log if the game wasn't kept
+                write_output(False)
             # Printing the output
-            print(currentstring)
+            print(output_string)
+    # Write the final output string if it didn't crash
+    if crashed == False:
+        finsihed = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
+        output_string = f"======================================================================================================================================================\n\
+                        The scrape finished at: {finsihed} with the follow stats\
+                        Page: {elapsed_pages}/{pages}\nGame: {elapsed_games}/{total_results}\nKept Games: {accepted_games}\{elapsed_games}\nTotal Elapsed: {elapsed_total_print}"
+        write_output(False)
 
 
 # Writing Output Files
-def write_output():
-    # Write the df to csv (using utf-16 instead of utf-8 because some characters weren't working with utf-8)
-    df.replace([np.nan, "nan"], "N/A", inplace=True)
-    df.to_csv("raw.csv", sep="\t", encoding="utf-16", index=False, na_rep="N/A")
-    # Write simple statistics to text file
-    with open("stats.txt", "w") as f:
+def write_output(write_csv):
+    # Write csv if true
+    if write_csv == True:
+        # Write the df to csv (using utf-16 instead of utf-8 because some characters weren't working with utf-8)
+        df.replace([np.nan, "nan"], "N/A", inplace=True)
+        df.to_csv(
+            "raw.csv",
+            sep="\t",
+            encoding="utf-8",
+            index=False,
+            na_rep="N/A",
+            mode="a",
+        )
+    # Write simple statistics to text file either way
+    with open("stats.txt", "a") as f:
         f.write(output_string)
 
 
@@ -275,9 +346,10 @@ def write_output():
 try:
     # Run the main function
     get_games()
-    # Write outpit
-    write_output()
 # If you need to stop for some reason all wont be lost if you do ctl + c
 except KeyboardInterrupt:
-    # Write output
-    write_output()
+    # Write output saying the user cancelled it
+    cancelled = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
+    output_string = f"======================================================================================================================================================\n\
+                    The user has cancelled the scrape of VGCHARTZ at {cancelled}"
+    write_output(False)
