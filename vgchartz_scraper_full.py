@@ -12,9 +12,6 @@ import time
 pages = 15
 results_per_page = 1000
 
-# Accepted games
-accepted_games = 0
-
 # The total results
 total_results = pages * results_per_page
 
@@ -119,9 +116,8 @@ def get_genre(str):
 
 # Function to get games
 def get_games():
-    # Global variables
+    # Global for output string
     global output_string
-    global accepted_games
     # Running totals
     elapsed_pages = 0
     elapsed_games = 0
@@ -146,7 +142,7 @@ def get_games():
         r = requests.get(url)
         # Beautiful soup the requested information
         soup = BeautifulSoup(r.content, "html5lib")
-        # Storing the main reults in the main table
+        # Storing the main results in the main table
         main_table = soup.find("div", attrs={"id": "generalBody"})
         # Finding hyperlinks in the table
         all_hyperlinks = main_table.find_all("a")
@@ -165,74 +161,69 @@ def get_games():
             elapsed_games += 1
             # Get the parent information
             parent_information = game.parent.parent.find_all("td")
+            # Get position information (Simply from the string)
+            rank = parent_information[0].string.strip()
+            # Get box art information (from the image alt text, this is useless, but you can include it if you want)
+            ##box_art = parent_information[1].find("img").attrs["alt"]
+            # Get the game name (From the game object, not the parent, but I'll leave that option here as well)
+            game_name = game.string.strip()
+            ##game_name = parent_information[2].find("a").string.strip()
             # Get platform information (From the images alt text)
             platform = parent_information[3].find("img").attrs["alt"].strip()
-            # Checking if the platform is one of the platform types I don't want ("Series" and "All". They're not useful to analyze individual video games)
-            # If the data isn't a "Series" or "All" continue, if not then just skip it
-            if ("Series" not in platform) and ("All" not in platform):
-                # Get position based on when it was accepted (can't use position from the data set anymore because it's tainted)
-                accepted_games += 1
-                # rank = parent_information[0].string.strip()
-                # Get box art information (from the image alt text, this is useless, but you can include it if you want)
-                ##box_art = parent_information[1].find("img").attrs["alt"]
-                # Get the game name (From the game object, not the parent, but I'll leave that option here as well)
-                game_name = game.string.strip()
-                ##game_name = parent_information[2].find("a").string.strip()
-                # Get publisher information (Simply from the string)
-                publisher = parent_information[4].string.strip()
-                # Get developer information (Simply from the string)
-                developer = parent_information[5].string.strip()
-                # Get the genre (Using a function, also I'll leave how to get the link from parent instead of the game object)
-                game_link = game.attrs["href"].strip()
-                ##game_link= parent_information[2].find("a").attrs["href"].strip()
-                genre = get_genre(game_link)
-                # Get critic score (by using a function to test for N/A and convert to float)
-                critic_score = float_covert(parent_information[6].string.strip())
-                # Get user score (by using a function to test for N/A and convert to float)
-                user_score = float_covert(parent_information[7].string.strip())
-                # Get total shipped (by using a function to test for N/A and convert to float)
-                total_shipped = float_covert(parent_information[8].string.strip())
-                # Get total sales (by using a function to test for N/A and convert to float)
-                total_sales = float_covert(parent_information[9].string.strip())
-                # Get north america sales (by using a function to test for N/A and convert to float)
-                na_sales = float_covert(parent_information[10].string.strip())
-                # Get pal sales (by using a function to test for N/A and convert to float)
-                pal_sales = float_covert(parent_information[11].string.strip())
-                # Get japan sales (by using a function to test for N/A and convert to float)
-                japan_sales = float_covert(parent_information[12].string.strip())
-                # Get other sales (by using a function to test for N/A and convert to float)
-                other_sales = float_covert(parent_information[13].string.strip())
-                # Get release date (by using a function to test for N/A and convert to date)
-                release_date = date_covert(parent_information[14].string.strip())
-                # Get last update date (by using a function to test for N/A and convert to date)
-                last_update = date_covert(parent_information[15].string.strip())
+            # Get publisher information (Simply from the string)
+            publisher = parent_information[4].string.strip()
+            # Get developer information (Simply from the string)
+            developer = parent_information[5].string.strip()
+            # Get the genre (Using a function, also I'll leave how to get the link from parent instead of the game object)
+            game_link = game.attrs["href"].strip()
+            ##game_link= parent_information[2].find("a").attrs["href"].strip()
+            genre = get_genre(game_link)
+            # Get critic score (by using a function to test for N/A and convert to float)
+            critic_score = float_covert(parent_information[6].string.strip())
+            # Get user score (by using a function to test for N/A and convert to float)
+            user_score = float_covert(parent_information[7].string.strip())
+            # Get total shipped (by using a function to test for N/A and convert to float)
+            total_shipped = float_covert(parent_information[8].string.strip())
+            # Get total sales (by using a function to test for N/A and convert to float)
+            total_sales = float_covert(parent_information[9].string.strip())
+            # Get north america sales (by using a function to test for N/A and convert to float)
+            na_sales = float_covert(parent_information[10].string.strip())
+            # Get pal sales (by using a function to test for N/A and convert to float)
+            pal_sales = float_covert(parent_information[11].string.strip())
+            # Get japan sales (by using a function to test for N/A and convert to float)
+            japan_sales = float_covert(parent_information[12].string.strip())
+            # Get other sales (by using a function to test for N/A and convert to float)
+            other_sales = float_covert(parent_information[13].string.strip())
+            # Get release date (by using a function to test for N/A and convert to date)
+            release_date = date_covert(parent_information[14].string.strip())
+            # Get last update date (by using a function to test for N/A and convert to date)
+            last_update = date_covert(parent_information[15].string.strip())
 
-                # Creating a data array
-                data = np.array(
-                    [
-                        accepted_games,
-                        game_name,
-                        platform,
-                        publisher,
-                        developer,
-                        genre,
-                        critic_score,
-                        user_score,
-                        total_shipped,
-                        total_sales,
-                        na_sales,
-                        pal_sales,
-                        japan_sales,
-                        other_sales,
-                        release_date,
-                        last_update,
-                    ]
-                )
+            # Creating a data array
+            data = np.array(
+                [
+                    rank,
+                    game_name,
+                    platform,
+                    publisher,
+                    developer,
+                    genre,
+                    critic_score,
+                    user_score,
+                    total_shipped,
+                    total_sales,
+                    na_sales,
+                    pal_sales,
+                    japan_sales,
+                    other_sales,
+                    release_date,
+                    last_update,
+                ]
+            )
 
-                # Adding to  the data frame
-                df.loc[len(df.index)] = data
+            # Adding to  the data frame
+            df.loc[len(df.index)] = data
 
-            # Either wat print times
             # Get elapsed times
             current_time = time.time()
             elapsed_game_time = current_time - game_start_time
@@ -248,8 +239,8 @@ def get_games():
                 "%H:%M:%S", time.gmtime(total_elapsed_time)
             )
             # Output string
-            output_string = f"Page: {elapsed_pages}/{pages}\nGame: {elapsed_games}/{total_results}\nKept Games: {accepted_games}\{elapsed_games}\nTotal Elapsed: {elapsed_total_print}"
-            currentstring = f"Page: {elapsed_pages}/{pages} | Game: {elapsed_games}/{total_results} | Kept Games: {accepted_games}\{elapsed_games} | Game Took: {elapsed_game_print} | Page: Took: {elapsed_page_print} | Total Elapsed: {elapsed_total_print}"
+            output_string = f"Page: {elapsed_pages}/{pages}\nGame: {elapsed_games}/{total_results}\nTotal Elapsed: {elapsed_total_print}"
+            currentstring = f"Page: {elapsed_pages}/{pages} | Game: {elapsed_games}/{total_results} | Game Took: {elapsed_game_print} | Page: Took: {elapsed_page_print} | Total Elapsed: {elapsed_total_print}"
             # Printing the output
             print(currentstring)
 
@@ -263,11 +254,11 @@ def write_output():
         f.write(output_string)
 
 
-# Run the scrape with a keybaord interrupt
+# Run the scrape with a keyboard interrupt
 try:
     # Run the main function
     get_games()
-    # Write outpit
+    # Write output
     write_output()
 # If you need to stop for some reason all wont be lost if you do ctl + c
 except KeyboardInterrupt:
