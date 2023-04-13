@@ -1,7 +1,0 @@
-
-Page: 1/63 | Game: 1/63000 | Kept Games: 0\1 | Game Took: 00:00:00 | Page: Took: 00:00:09 | Total Elapsed: 00:00:14
-Page: 1/63 | Game: 2/63000 | Kept Games: 0\2 | Game Took: 00:00:00 | Page: Took: 00:00:10 | Total Elapsed: 00:00:15
-Page: 1/63 | Game: 3/63000 | Kept Games: 0\3 | Game Took: 00:00:00 | Page: Took: 00:00:11 | Total Elapsed: 00:00:16
-Page: 1/63 | Game: 4/63000 | Kept Games: 0\4 | Game Took: 00:00:00 | Page: Took: 00:00:12 | Total Elapsed: 00:00:17
-Page: 1/63 | Game: 5/63000 | Kept Games: 0\5 | Game Took: 00:00:00 | Page: Took: 00:00:13 | Total Elapsed: 00:00:17
-Page: 1/63 | Game: 6/63000 | Kept Games: 0\6 | Game Took: 00:00:00 | Page: Took: 00:00:13 | Total Elapsed: 00:00:18

@@ -127,8 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Outputs
 platforms.csv
 all_games.csv
 kept_games.csv
-stats.txt
 log.txt

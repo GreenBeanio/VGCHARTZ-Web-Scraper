@@ -445,9 +445,7 @@ def write_output(write_csv, keep_games):
         # If we're writing to a game we kept
         if keep_games == True:
             # Replace platform codes with names
-            df.loc[df.index[-1] :] = df.loc[df.index[-1] :].replace(
-                codes, platforms, inplace=True
-            )
+            df.loc[df.index[-1] :] = df.loc[df.index[-1] :].replace(codes, platforms)
             # Write the df to csv
             df.loc[df.index[-1] :].to_csv(
                 "kept_games.csv",
@@ -461,7 +459,7 @@ def write_output(write_csv, keep_games):
         # Writing to the all csv either way
         # Replace platform codes with names
         df_all.loc[df_all.index[-1] :] = df_all.loc[df_all.index[-1] :].replace(
-            codes, platforms, inplace=True
+            codes, platforms
         )
         # Write the df to csv
         df_all.loc[df_all.index[-1] :].to_csv(
