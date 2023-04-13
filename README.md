@@ -8,9 +8,41 @@ This scrapes the VGCHARTZ website to get information about video game sales.
 
  I made this for an assignment in one of my Data Science courses. I made it because the [Kaggle database](https://www.kaggle.com/datasets/gregorut/videogamesales) that I was going to use was from 2016, with full years only up to 2015. I was able to find the code used to scrape the [original data set](https://github.com/GregorUT/vgchartzScrape). However, it was also outdated, and I wasn't able to get it to work. I haven't made a web scraper before, and I wanted to try and make one; so, I did. Note that the scrape will take quite a long time depending on the amount of requests you wish to pull.
 
-# Which Script Should I Use?
+# How to Set it Up
 
-I would recommend using the "vgchartz_scraper.py" script instead of "vgchartz_scraper_full.py". "vgchartz_scraper.py" filters out the games that are actually "Series" and "All". Meaning that it filters out video games that aren't actually a single video game. If you want to have statistics for a total Series and a single game across all platforms, it's published on consolidated into one entry then use "vgchartz_scraper_full.py". If you want to have statistics for **only** the actual individual video games on individual platforms, then use "vgchartz_scraper.py".
+You should be able to run it straight without making any changes. However, you may want to change the following parameters.
+
+## At the beginning of the script
+
+- pages
+  - This sets the amount of pages you will request.
+  - I would try to keep it around a maximum of 1,000 requests per page, but I'm not sure if there's actually a limit on the website. Just so that it isn't too large per page download.
+- results_per_page
+  - This is how many results will show up per page.
+  - Like I said I'd keep it at a maximum of 1,000 requests per page. The websites controls only go up to 200, but I haven't had any trouble requesting 1,000 and it's a large enough size for me.
+
+## In the get_list function
+
+- attempts
+  - This is the amount of attempts that it will make before it crashes.
+  - I have this at 40, but if you want it larger or smaller go ahead. If your internet is prone to going out I'd put it up a lot higher so that you don't crash when the internet goes out.
+- wait_time
+  - This is how long in seconds the script will wait between attempts.
+  - I have this set at 15, just because it seems to work so far.
+  - The failures that I've had with the script have come from 429 errors. Which is sending too many requests to the website. Increase this time if you're crashing, or the amount of attempts, or both,
+
+# Outputs
+
+This script will output 4 different files
+
+- kept_games.csv
+  - This is a csv file will all the games in the database, except for games with the platform "All" and "Series". I don't personally think that seeing the statistics for a game across "All" the platforms on is useful for my purposes. I also don't think it's useful to have the statistics for the game "Series" as a whole.
+- all_games.csv
+  - This is a csv file with all of the games that where in the database.
+- log.txt
+  - This is a log of all the events and errors that occurred in the script. As well as how long they took.
+- platforms.csv
+  - This is a list of all the codes the website uses to represent the various platforms. As well as the actual platform names that accompany them.
 
 # Shout-Out
 
@@ -26,13 +58,11 @@ Shout-out to [Gregory Smith](https://github.com/GregorUT) for making the origina
   - call env/Scripts/activate.bat
   - python3 -m pip install -r requirements.txt
   - Depending on which script
-    - python3 vgchartz_scraper.py
-    - python3 vgchartz_scraper_full.py
+    - python3 vgchartz_scrape.py
 - Running After
   - cd /your/folder
   - Depending on which script
-    - call env/Scripts/activate.bat && python3 vgchartz_scraper.py
-    - call env/Scripts/activate.bat && python3 vgchartz_scraper_full.py
+    - call env/Scripts/activate.bat && python3 vgchartz_scrape.py
 - Running Without Terminal Staying Around
   - Change the file type from py to pyw
   - You should just be able to click the file to launch it
@@ -47,15 +77,12 @@ Shout-out to [Gregory Smith](https://github.com/GregorUT) for making the origina
   - source env/bin/activate
   - python3 -m pip install -r requirements.txt
   - Depending on which script
-    - python3 vgchartz_scraper.py
-    - python3 vgchartz_scraper_full.py
+    - python3 vgchartz_scrape.py
 - Running After
   - cd /your/folder
   - Depending on which script
-    - source env/bin/activate && python3 vgchartz_scraper.py
-    - source env/bin/activate && python3 vgchartz_scraper_full.py
+    - source env/bin/activate && python3 vgchartz_scrape.py
 - Running Without Terminal Staying Around
   - Run the file with nohup
   - May have to set executable if it's not already
-    - chmod +x vgchartz_scraper.py
-    - chmod +x vgchartz_scraper_full.py
+    - chmod +x vgchartz_scrape.py

@@ -128,3 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 platforms.csv
+all_games.csv
+kept_games.csv
+stats.txt

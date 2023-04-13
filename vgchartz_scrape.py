@@ -8,9 +8,9 @@ import html5lib
 import datetime
 import time
 
-# Parameters to set for amount of results
-pages = 15
-results_per_page = 10  # 1000
+# Parameters to set for amount of results (The full database as of this script is 62,674 results)
+pages = 63
+results_per_page = 1000
 
 # Set to true if you want to use full dates instead of just the years
 full_date = False
@@ -29,8 +29,8 @@ url_head = "https://www.vgchartz.com/games/games.php?"
 url_pages = "page="
 url_results = "&results="
 url_tail = (
-    "&order=Sales&ownership=Both&direction=DESC&showtotalsales=1&shownasales=1&showpalsales=1&showjapansales=1&"
-    "showothersales=1&showpublisher=1&showdeveloper=1&showreleasedate=1&showlastupdate=1&showvgchartzscore=0&showcriticscore=1"
+    "&order=Sales&ownership=Both&direction=DESC&showtotalsales=1&shownasales=1&showpalsales=1&showjapansales=1"
+    "&showothersales=1&showpublisher=1&showdeveloper=1&showreleasedate=1&showlastupdate=1&showvgchartzscore=0&showcriticscore=1"
     "&showuserscore=1&showshipped=1"
 )
 
@@ -118,14 +118,17 @@ def date_covert(str):
 
 # Function get a list from beautiful soup
 def get_list(url, request_type, pages_or_game):
-    # Track the number of attempts and if it worked
-    attempts = 3
+    # Set the amount of attempts you want to wait for
+    attempts = 40
+    # Time to wait inbetween attempts in seconds (The failures will most likely be because a 429 too many requests issue)
+    wait_time = 15
+    # Track if it worked
     worked = False
     # Global string
     global output_string
     # For storing the rest
     result = ""
-    # Max number of attempts is 3 in this case (change it if you want more chances)
+    # While loop for the number of attempts
     while attempts > 0:
         # Increase attempt
         attempts -= 1
@@ -166,7 +169,6 @@ def get_list(url, request_type, pages_or_game):
                 attempts = 0
                 # Set worked to true
                 worked = True
-
         # If we don't get the information we were looking for
         except:
             if request_type == "game":
@@ -183,6 +185,8 @@ def get_list(url, request_type, pages_or_game):
             write_output(False, False)
             # Print error
             print(output_string)
+            # Sleep between second attempt
+            time.sleep(wait_time)
     # When the while loop finishes
     else:
         # If it didn't work crash, if it did work continue on
@@ -427,9 +431,9 @@ def get_games():
             # Printing the output
             print(output_string)
     # Write the final output string if it didn't crash before this
-    finsihed = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
+    finished = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
     output_string = f"======================================================================================================================================================\n\
-                    The scrape finished at: {finsihed} with the follow stats\
+                    The scrape finished at: {finished} with the follow stats\
                     Page: {elapsed_pages}/{pages}\nGame: {elapsed_games}/{total_results}\nKept Games: {accepted_games}\{elapsed_games}\nTotal Elapsed: {elapsed_total_print}"
     write_output(False, False)
 
@@ -440,13 +444,10 @@ def write_output(write_csv, keep_games):
     if write_csv == True:
         # If we're writing to a game we kept
         if keep_games == True:
-            # Replace unwanted empty values in the last row (also leaving the old code option that did the entire data frame)
-            # df.loc[df.index[-1] :].replace(
-            #    [np.nan, "nan", np.empty, ""], "N/A", inplace=True
-            # )
-            # df.replace([np.nan, "nan", np.empty, ""], "N/A", inplace=True)
             # Replace platform codes with names
-            df.loc[df.index[-1] :].replace(codes, platforms, inplace=True)
+            df.loc[df.index[-1] :] = df.loc[df.index[-1] :].replace(
+                codes, platforms, inplace=True
+            )
             # Write the df to csv
             df.loc[df.index[-1] :].to_csv(
                 "kept_games.csv",
@@ -457,23 +458,11 @@ def write_output(write_csv, keep_games):
                 na_rep="N/A",
                 mode="a",
             )
-            # df.to_csv(
-            #     "raw.csv",
-            #     sep=",",
-            #     encoding="utf-8-sig",
-            #     index=False,
-            #     header=False,
-            #     na_rep="N/A",
-            #     mode="a",
-            # )
-        # Either way we write to the "All" & "Series" csv
-        # Replace unwanted empty values in the last row (also leaving the old code option that did the entire data frame)
-        # df_all.loc[df_all.index[-1] :].replace(
-        #    [np.nan, "nan", np.empty, ""], "N/A", inplace=True
-        # )
-        # df.replace([np.nan, "nan", np.empty, ""], "N/A", inplace=True)
+        # Writing to the all csv either way
         # Replace platform codes with names
-        df_all.loc[df_all.index[-1] :].replace(codes, platforms, inplace=True)
+        df_all.loc[df_all.index[-1] :] = df_all.loc[df_all.index[-1] :].replace(
+            codes, platforms, inplace=True
+        )
         # Write the df to csv
         df_all.loc[df_all.index[-1] :].to_csv(
             "all_games.csv",
@@ -485,14 +474,36 @@ def write_output(write_csv, keep_games):
             mode="a",
         )
     # Write simple statistics to text file either way
-    with open("stats.txt", "a") as f:
+    with open("log.txt", "a") as f:
         f.write("\n" + output_string)
 
 
 # Saving what we collected to a csv
 def save_platforms():
+    # Save the platform information
     df_platform.to_csv(
         "platforms.csv",
+        sep=",",
+        encoding="utf-8-sig",
+        index=False,
+        header=True,
+        na_rep="N/A",
+        mode="w",
+    )
+    # Save the initial csv for the other csv as well (so that they'll have headers)
+    # For the kept games
+    df.to_csv(
+        "kept_games.csv",
+        sep=",",
+        encoding="utf-8-sig",
+        index=False,
+        header=True,
+        na_rep="N/A",
+        mode="w",
+    )
+    # For the all csv
+    df_all.to_csv(
+        "all_games.csv",
         sep=",",
         encoding="utf-8-sig",
         index=False,
