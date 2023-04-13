@@ -34,7 +34,199 @@ url_tail = (
     "&showuserscore=1&showshipped=1"
 )
 
-# Create a data frame
+
+# Array of Platform Codes
+codes = np.array(
+    [
+        "3DO",
+        "Aco",
+        "All",
+        "Amig",
+        "CD32",
+        "ACPC",
+        "And",
+        "ApII",
+        "Arc",
+        "2600",
+        "5200",
+        "7800",
+        "AJ",
+        "Lynx",
+        "AST",
+        "BBCM",
+        "BRW",
+        "CDi",
+        "CV",
+        "C128",
+        "C64",
+        "DSiW",
+        "FCF",
+        "FDS",
+        "FMT",
+        "GB",
+        "GBA",
+        "GBC",
+        "GC",
+        "GG",
+        "GIZ",
+        "HTC",
+        "Int",
+        "iOS",
+        "iQue",
+        "Linux",
+        "OSX",
+        "Odys",
+        "PC",
+        "MSD",
+        "MSX",
+        "NGage",
+        "NG",
+        "NGX",
+        "2DS",
+        "3DS",
+        "N64",
+        "DS",
+        "DSi",
+        "NES",
+        "NS",
+        "Nvidi",
+        "OR",
+        "Ouya",
+        "PCFX",
+        "PCE",
+        "PS",
+        "PS2",
+        "PS3",
+        "PS4",
+        "PS5",
+        "PSN",
+        "PSP",
+        "PSV",
+        "PVR",
+        "S32X",
+        "SCD",
+        "DC",
+        "GEN",
+        "MS",
+        "SAT",
+        "Series",
+        "Mob",
+        "SF",
+        "SNES",
+        "TG16",
+        "UNK",
+        "VB",
+        "VC",
+        "Wii",
+        "WiiU",
+        "WW",
+        "WinP",
+        "WS",
+        "XB",
+        "X360",
+        "XBL",
+        "XOne",
+        "XS",
+        "ZXS",
+    ]
+)
+# Array of Platform Names
+platforms = np.array(
+    [
+        "3DO Interactive Multiplayer",
+        "Acorn Electron",
+        "All",
+        "Amiga",
+        "Amiga CD32",
+        "Amstrad CPC",
+        "Android",
+        "Apple II",
+        "Arcade",
+        "Atari 2600",
+        "Atari 5200",
+        "Atari 7800",
+        "Atari Jaguar",
+        "Atari Lynx",
+        "Atari ST",
+        "BBC Micro",
+        "Browser",
+        "CD-i",
+        "ColecoVision",
+        "Commodore 128",
+        "Commodore 64",
+        "DSi Ware",
+        "Fairchild Channel F",
+        "Famicom Disk System",
+        "FM Towns",
+        "Game Boy",
+        "Game Boy Advance",
+        "Game Boy Color",
+        "GameCube",
+        "GameGear",
+        "Gizmondo",
+        "HTC Vive",
+        "Intellivision",
+        "iOS",
+        "iQue",
+        "Linux",
+        "Mac OS X",
+        "Magnavox Odyssey",
+        "Microsoft Windows",
+        "MS-DOS",
+        "MSX",
+        "N-Gage",
+        "Neo Geo",
+        "Neo Geo X",
+        "Nintendo 2DS",
+        "Nintendo 3DS",
+        "Nintendo 64",
+        "Nintendo DS",
+        "Nintendo DSi",
+        "Nintendo Entertainment System",
+        "Nintendo Switch",
+        "Nvidia Shield",
+        "Oculus Rift",
+        "Ouya",
+        "PC-FX",
+        "PCE",
+        "PlayStation",
+        "PlayStation 2",
+        "PlayStation 3",
+        "PlayStation 4",
+        "PlayStation 5",
+        "PlayStation Network",
+        "PlayStation Portable",
+        "PlayStation Vita",
+        "Playstation VR",
+        "Sega 32X",
+        "Sega CD",
+        "Sega Dreamcast",
+        "Sega Genesis",
+        "Sega Master System",
+        "Sega Saturn",
+        "Series",
+        "Standard Mobile",
+        "Super Famicom",
+        "Super Nintendo Entertainment System",
+        "TurboGrafx-16",
+        "Unknown",
+        "Virtual Boy",
+        "Virtual Console",
+        "Wii",
+        "Wii U",
+        "WiiWare",
+        "Windows Phone",
+        "WonderSwan",
+        "Xbox",
+        "Xbox 360",
+        "XBox Live",
+        "Xbox One",
+        "Xbox Series",
+        "ZX Spectrum",
+    ]
+)
+
+# Create a data frame to store the output without the "All" or "Series"
 df = pd.DataFrame(
     columns=[
         "Rank",
@@ -55,6 +247,8 @@ df = pd.DataFrame(
         "Last Update",
     ]
 )
+# Create a copy of the empty data frame to store the output with the "All" & "Series" platforms
+df_all = df.copy()
 
 
 # Function to convert string to float, check for N/A, and remove the m for millions
@@ -152,7 +346,7 @@ def get_list(url, request_type, pages_or_game):
             elif request_type == "genre":
                 output_string = f"Error getting genre information from the game {pages_or_game}"  # need to get variable
             # Write to log
-            write_output(False)
+            write_output(False, False)
             # Print error
             print(output_string)
     # When the while loop finishes
@@ -173,7 +367,7 @@ def get_list(url, request_type, pages_or_game):
                             \nBecause of an error retreiving genre information\
                             \n======================================================================================================================================================"
             # Write error that the scraper stopped working
-            write_output(False)
+            write_output(False, False)
             # Print the output
             print(output_string)
             # Exit the entire script
@@ -249,48 +443,75 @@ def get_games():
             parent_information = game.parent.parent.find_all("td")
             # Get platform information (From the images alt text)
             platform = parent_information[3].find("img").attrs["alt"].strip()
+            # Get the overall rank (Used for the "All" and "Series" data frame)
+            rank = parent_information[0].string.strip()
+            # Get box art information (from the image alt text, this is useless, but you can include it if you want)
+            ##box_art = parent_information[1].find("img").attrs["alt"]
+            # Get the game name (From the game object, not the parent, but I'll leave that option here as well)
+            game_name = game.string.strip()
+            ##game_name = parent_information[2].find("a").string.strip()
+            # Get publisher information (Simply from the string)
+            publisher = parent_information[4].string.strip()
+            # Get developer information (Simply from the string)
+            developer = parent_information[5].string.strip()
+            # Get the genre (Using a function, also I'll leave how to get the link from parent instead of the game object)
+            game_link = game.attrs["href"].strip()
+            ##game_link= parent_information[2].find("a").attrs["href"].strip()
+            genre = get_genre(game_link, game_name)
+            # Get critic score (by using a function to test for N/A and convert to float)
+            critic_score = float_covert(parent_information[6].string.strip())
+            # Get user score (by using a function to test for N/A and convert to float)
+            user_score = float_covert(parent_information[7].string.strip())
+            # Get total shipped (by using a function to test for N/A and convert to float)
+            total_shipped = float_covert(parent_information[8].string.strip())
+            # Get total sales (by using a function to test for N/A and convert to float)
+            total_sales = float_covert(parent_information[9].string.strip())
+            # Get north america sales (by using a function to test for N/A and convert to float)
+            na_sales = float_covert(parent_information[10].string.strip())
+            # Get pal sales (by using a function to test for N/A and convert to float)
+            pal_sales = float_covert(parent_information[11].string.strip())
+            # Get japan sales (by using a function to test for N/A and convert to float)
+            japan_sales = float_covert(parent_information[12].string.strip())
+            # Get other sales (by using a function to test for N/A and convert to float)
+            other_sales = float_covert(parent_information[13].string.strip())
+            # Get release date (by using a function to test for N/A and convert to date)
+            release_date = date_covert(parent_information[14].string.strip())
+            # Get last update date (by using a function to test for N/A and convert to date)
+            last_update = date_covert(parent_information[15].string.strip())
+            # Creating a data array for the "All" and "Series" data frame
+            # Creating a data array
+            data_all = np.array(
+                [
+                    rank,
+                    game_name,
+                    platform,
+                    publisher,
+                    developer,
+                    genre,
+                    critic_score,
+                    user_score,
+                    total_shipped,
+                    total_sales,
+                    na_sales,
+                    pal_sales,
+                    japan_sales,
+                    other_sales,
+                    release_date,
+                    last_update,
+                ]
+            )
+            # Adding to  the data frame ("All" & "Series")
+            df_all.loc[len(df_all.index)] = data_all
             # Checking if the platform is one of the platform types I don't want ("Series" and "All". They're not useful to analyze individual video games)
             # If the data isn't a "Series" or "All" continue, if not then just skip it
+            # I have changed my mind on that, instead I will just save it to 2 csv, one with them and one without.
+            # I'm not worried too much about speed. I can just run it when I sleep one night. I could  filter out the unwanted rows at the end and
+            # save computing time, but I'm not. Boo hoo.
             if ("Series" not in platform) and ("All" not in platform):
                 # Note that it was kept
                 kept_game = True
                 # Get position based on when it was accepted (can't use position from the data set anymore because it's tainted)
                 accepted_games += 1
-                # rank = parent_information[0].string.strip()
-                # Get box art information (from the image alt text, this is useless, but you can include it if you want)
-                ##box_art = parent_information[1].find("img").attrs["alt"]
-                # Get the game name (From the game object, not the parent, but I'll leave that option here as well)
-                game_name = game.string.strip()
-                ##game_name = parent_information[2].find("a").string.strip()
-                # Get publisher information (Simply from the string)
-                publisher = parent_information[4].string.strip()
-                # Get developer information (Simply from the string)
-                developer = parent_information[5].string.strip()
-                # Get the genre (Using a function, also I'll leave how to get the link from parent instead of the game object)
-                game_link = game.attrs["href"].strip()
-                ##game_link= parent_information[2].find("a").attrs["href"].strip()
-                genre = get_genre(game_link, game_name)
-                # Get critic score (by using a function to test for N/A and convert to float)
-                critic_score = float_covert(parent_information[6].string.strip())
-                # Get user score (by using a function to test for N/A and convert to float)
-                user_score = float_covert(parent_information[7].string.strip())
-                # Get total shipped (by using a function to test for N/A and convert to float)
-                total_shipped = float_covert(parent_information[8].string.strip())
-                # Get total sales (by using a function to test for N/A and convert to float)
-                total_sales = float_covert(parent_information[9].string.strip())
-                # Get north america sales (by using a function to test for N/A and convert to float)
-                na_sales = float_covert(parent_information[10].string.strip())
-                # Get pal sales (by using a function to test for N/A and convert to float)
-                pal_sales = float_covert(parent_information[11].string.strip())
-                # Get japan sales (by using a function to test for N/A and convert to float)
-                japan_sales = float_covert(parent_information[12].string.strip())
-                # Get other sales (by using a function to test for N/A and convert to float)
-                other_sales = float_covert(parent_information[13].string.strip())
-                # Get release date (by using a function to test for N/A and convert to date)
-                release_date = date_covert(parent_information[14].string.strip())
-                # Get last update date (by using a function to test for N/A and convert to date)
-                last_update = date_covert(parent_information[15].string.strip())
-
                 # Creating a data array
                 data = np.array(
                     [
@@ -312,11 +533,8 @@ def get_games():
                         last_update,
                     ]
                 )
-
                 # Adding to  the data frame
                 df.loc[len(df.index)] = data
-
-            # Either way print times
             # Get elapsed times
             current_time = time.time()
             elapsed_game_time = current_time - game_start_time
@@ -336,10 +554,10 @@ def get_games():
             # Write to log
             if kept_game == True:
                 # Write to csv if the game was kept
-                write_output(True)
+                write_output(True, True)
             else:
                 # Only write to log if the game wasn't kept
-                write_output(False)
+                write_output(True, False)
             # Printing the output
             print(output_string)
     # Write the final output string if it didn't crash before this
@@ -347,21 +565,52 @@ def get_games():
     output_string = f"======================================================================================================================================================\n\
                     The scrape finished at: {finsihed} with the follow stats\
                     Page: {elapsed_pages}/{pages}\nGame: {elapsed_games}/{total_results}\nKept Games: {accepted_games}\{elapsed_games}\nTotal Elapsed: {elapsed_total_print}"
-    write_output(False)
+    write_output(False, False)
 
 
 # Writing Output Files
-def write_output(write_csv):
+def write_output(write_csv, keep_games):
     # Write csv if true
     if write_csv == True:
+        # If we're writing to a game we kept
+        if keep_games == True:
+            # Replace unwanted empty values in the last row (also leaving the old code option that did the entire data frame)
+            df.loc[df.index[-1] :].replace(
+                [np.nan, "nan", np.empty, ""], "N/A", inplace=True
+            )
+            # df.replace([np.nan, "nan", np.empty, ""], "N/A", inplace=True)
+            # Replace platform codes with names
+            df.loc[df.index[-1] :].replace(codes, platforms, inplace=True)
+            # Write the df to csv
+            df.loc[df.index[-1] :].to_csv(
+                "kept_games.csv",
+                sep=",",
+                encoding="utf-8-sig",
+                index=False,
+                header=False,
+                na_rep="N/A",
+                mode="a",
+            )
+            # df.to_csv(
+            #     "raw.csv",
+            #     sep=",",
+            #     encoding="utf-8-sig",
+            #     index=False,
+            #     header=False,
+            #     na_rep="N/A",
+            #     mode="a",
+            # )
+        # Either way we write to the "All" & "Series" csv
         # Replace unwanted empty values in the last row (also leaving the old code option that did the entire data frame)
-        df.loc[df.index[-1] :].replace(
-            [np.nan, "nan", np.empty, ""], "N/A", inplace=True, regex=True
+        df_all.loc[df_all.index[-1] :].replace(
+            [np.nan, "nan", np.empty, ""], "N/A", inplace=True
         )
         # df.replace([np.nan, "nan", np.empty, ""], "N/A", inplace=True)
+        # Replace platform codes with names
+        df_all.loc[df_all.index[-1] :].replace(codes, platforms, inplace=True)
         # Write the df to csv
-        df.loc[df.index[-1] :].to_csv(
-            "raw.csv",
+        df_all.loc[df_all.index[-1] :].to_csv(
+            "all_games.csv",
             sep=",",
             encoding="utf-8-sig",
             index=False,
@@ -369,15 +618,6 @@ def write_output(write_csv):
             na_rep="N/A",
             mode="a",
         )
-        # df.to_csv(
-        #     "raw.csv",
-        #     sep=",",
-        #     encoding="utf-8-sig",
-        #     index=False,
-        #     header=False,
-        #     na_rep="N/A",
-        #     mode="a",
-        # )
     # Write simple statistics to text file either way
     with open("stats.txt", "a") as f:
         f.write("\n" + output_string)
@@ -385,6 +625,7 @@ def write_output(write_csv):
 
 # Run the scrape with a keybaord interrupt
 try:
+    pass
     # Run the main function
     get_games()
 # If you need to stop for some reason all wont be lost if you do ctl + c
@@ -393,4 +634,4 @@ except KeyboardInterrupt:
     cancelled = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
     output_string = f"======================================================================================================================================================\n\
                     The user has cancelled the scrape of VGCHARTZ at {cancelled}"
-    write_output(False)
+    write_output(False, False)
