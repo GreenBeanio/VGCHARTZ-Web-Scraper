@@ -84,5 +84,6 @@ Shout-out to [Gregory Smith](https://github.com/GregorUT) for making the origina
     - source env/bin/activate && python3 vgchartz_scrape.py
 - Running Without Terminal Staying Around
   - Run the file with nohup
-  - May have to set executable if it's not already
+    - nohup python3 vgchartz_scrape.py > /dev/null &
+  - May have to set executable if it doesn't work
     - chmod +x vgchartz_scrape.py
