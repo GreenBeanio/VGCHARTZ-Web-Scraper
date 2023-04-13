@@ -10,7 +10,7 @@ import time
 
 # Parameters to set for amount of results
 pages = 15
-results_per_page = 1000
+results_per_page = 10  # 1000
 
 # Set to true if you want to use full dates instead of just the years
 full_date = False
@@ -107,27 +107,100 @@ def date_covert(str):
     return result
 
 
-# Function to get the genre of a game
-def get_genre(str):
+# Function get a list from beautiful soup
+def get_list(url, request_type, pages_or_game):
+    # Track the number of attempts and if it worked
+    attempts = 3
+    worked = False
+    # Global string
+    global output_string
+    # For storing the rest
     result = ""
+    # Max number of attempts is 3 in this case (change it if you want more chances)
+    while attempts > 0:
+        # Increase attempt
+        attempts -= 1
+        # Try to get information from the website
+        try:
+            # Get the url information
+            r = requests.get(url)
+            # Beautiful soup the requested information
+            soup = BeautifulSoup(r.content, "html5lib")
+            # If we're getting the game information
+            if request_type == "game":
+                # Storing the main reults in the main table
+                main_table = soup.find("div", attrs={"id": "generalBody"})
+                # Finding hyperlinks in the table
+                result = main_table.find_all("a")
+                # Set attempt to 0
+                attempts = 0
+                # Set worked to true
+                worked = True
+            # If we're getitng the genre information
+            elif request_type == "genre":
+                # Find the table
+                game_table = soup.find("div", attrs={"id": "gameGenInfoBox"})
+                result = game_table.find_all("h2")
+                # Set attempt to 0
+                attempts = 0
+                # Set worked to true
+                worked = True
+        # If we don't get the information we were looking for
+        except:
+            if request_type == "game":
+                output_string = f"Error getting game information from page {pages_or_game}"  # need to get variable
+            elif request_type == "genre":
+                output_string = f"Error getting genre information from the game {pages_or_game}"  # need to get variable
+            # Write to log
+            write_output(False)
+            # Print error
+            print(output_string)
+    # When the while loop finishes
+    else:
+        # If it didn't work crash, if it did work continue on
+        if worked == False:
+            # Get time of the crash
+            crash = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
+            # Get output depending on type of crash
+            if request_type == "games":
+                output_string = f"======================================================================================================================================================\n\
+                            The scrape of VGCHARTZ has broken at {crash}\
+                            \nBecause of an error retreiving game information\
+                            \n======================================================================================================================================================"
+            elif request_type == "genre":
+                output_string = f"======================================================================================================================================================\n\
+                            The scrape of VGCHARTZ has broken at {crash}\
+                            \nBecause of an error retreiving genre information\
+                            \n======================================================================================================================================================"
+            # Write error that the scraper stopped working
+            write_output(False)
+            # Print the output
+            print(output_string)
+            # Exit the entire script
+            exit()
+        # If it did work return the result
+        elif worked == True:
+            return result
+
+
+# Function to get the genre of a game
+def get_genre(url, game):
+    # Call the function to get results from the webpage
+    h2 = get_list(url, "genre", game)
+    # To store the result
+    result = ""
+    # Try to get the genre
     try:
-        r2 = requests.get(str)
-        # Beautiful soup the requested information
-        soup2 = BeautifulSoup(r2.content, "html5lib")
-        # Find the table
-        game_table = soup2.find("div", attrs={"id": "gameGenInfoBox"})
-        h2 = game_table.find_all("h2")
+        # Search through all the headers to find the Genre
         for h in h2:
             if h.string == "Genre":
+                # Find the genres next sibling which will have the infroamtion on it
                 result = h.next_sibling.string.strip()
+    # If it couldn't get the genre for some reason set it as nan
     except:
         result = np.nan
+    # Return the result
     return result
-
-
-# Function get games list
-def get_games_list():
-    pass
 
 
 # Function to get games
@@ -138,8 +211,6 @@ def get_games():
     # Running totals
     elapsed_pages = 0
     elapsed_games = 0
-    # Track if it crashed
-    crashed = False
     # Getting start time
     total_start_time = time.time()
     # Loop for every page you want to search
@@ -157,51 +228,8 @@ def get_games():
             + str(results_per_page)
             + url_tail
         )
-
-        # Track number of attempts and if it worked
-        attempt = 1
-        worked = False
-        # Max number of attempts is 3 in this case (change it if you want more chances)
-        while attempt <= 3:
-            # Increase attempt
-            attempt += 1
-            # Try to get information from the website
-            try:
-                # Get the url information
-                r = requests.get(url)
-                # Beautiful soup the requested information
-                soup = BeautifulSoup(r.content, "html5lib")
-                # Storing the main reults in the main table
-                main_table = soup.find("div", attrs={"id": "generalBody"})
-                # Finding hyperlinks in the table
-                all_hyperlinks = main_table.find_all("a")
-                # Set attempt to 4
-                attempt = 4
-                # Set worked to true
-                # worked = True
-            except:
-                output_string = f"Error getting information from page {elapsed_pages}"
-                # Write to log
-                write_output(False)
-                # Print error
-                print(output_string)
-        # When the while loop finishes
-        else:
-            # If it didn't work break, if it did work continue on
-            if worked == False:
-                # Set crashed
-                crashed = True
-                # Write error that the scraper stopped working
-                crash = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
-                output_string = f"======================================================================================================================================================\n\
-                                The scrape of VGCHARTZ has broken at {crash}\
-                                \n======================================================================================================================================================"
-                write_output(False)
-                # Print the output
-                print(output_string)
-                # Break out of the meain page for loop
-                break
-
+        # Call the function to get results from the webpage
+        all_hyperlinks = get_list(url, "game", elapsed_pages)
         # Finding hyperlinks that contain games
         game_hyperlinks = []
         for i in all_hyperlinks:
@@ -241,7 +269,7 @@ def get_games():
                 # Get the genre (Using a function, also I'll leave how to get the link from parent instead of the game object)
                 game_link = game.attrs["href"].strip()
                 ##game_link= parent_information[2].find("a").attrs["href"].strip()
-                genre = get_genre(game_link)
+                genre = get_genre(game_link, game_name)
                 # Get critic score (by using a function to test for N/A and convert to float)
                 critic_score = float_covert(parent_information[6].string.strip())
                 # Get user score (by using a function to test for N/A and convert to float)
@@ -288,7 +316,7 @@ def get_games():
                 # Adding to  the data frame
                 df.loc[len(df.index)] = data
 
-            # Either wat print times
+            # Either way print times
             # Get elapsed times
             current_time = time.time()
             elapsed_game_time = current_time - game_start_time
@@ -314,32 +342,45 @@ def get_games():
                 write_output(False)
             # Printing the output
             print(output_string)
-    # Write the final output string if it didn't crash
-    if crashed == False:
-        finsihed = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
-        output_string = f"======================================================================================================================================================\n\
-                        The scrape finished at: {finsihed} with the follow stats\
-                        Page: {elapsed_pages}/{pages}\nGame: {elapsed_games}/{total_results}\nKept Games: {accepted_games}\{elapsed_games}\nTotal Elapsed: {elapsed_total_print}"
-        write_output(False)
+    # Write the final output string if it didn't crash before this
+    finsihed = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
+    output_string = f"======================================================================================================================================================\n\
+                    The scrape finished at: {finsihed} with the follow stats\
+                    Page: {elapsed_pages}/{pages}\nGame: {elapsed_games}/{total_results}\nKept Games: {accepted_games}\{elapsed_games}\nTotal Elapsed: {elapsed_total_print}"
+    write_output(False)
 
 
 # Writing Output Files
 def write_output(write_csv):
     # Write csv if true
     if write_csv == True:
-        # Write the df to csv (using utf-16 instead of utf-8 because some characters weren't working with utf-8)
-        df.replace([np.nan, "nan"], "N/A", inplace=True)
-        df.to_csv(
+        # Replace unwanted empty values in the last row (also leaving the old code option that did the entire data frame)
+        df.loc[df.index[-1] :].replace(
+            [np.nan, "nan", np.empty, ""], "N/A", inplace=True, regex=True
+        )
+        # df.replace([np.nan, "nan", np.empty, ""], "N/A", inplace=True)
+        # Write the df to csv
+        df.loc[df.index[-1] :].to_csv(
             "raw.csv",
-            sep="\t",
-            encoding="utf-8",
+            sep=",",
+            encoding="utf-8-sig",
             index=False,
+            header=False,
             na_rep="N/A",
             mode="a",
         )
+        # df.to_csv(
+        #     "raw.csv",
+        #     sep=",",
+        #     encoding="utf-8-sig",
+        #     index=False,
+        #     header=False,
+        #     na_rep="N/A",
+        #     mode="a",
+        # )
     # Write simple statistics to text file either way
     with open("stats.txt", "a") as f:
-        f.write(output_string)
+        f.write("\n" + output_string)
 
 
 # Run the scrape with a keybaord interrupt
