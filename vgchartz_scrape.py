@@ -49,7 +49,7 @@ url_pages = "page="
 url_results = "&results="
 url_tail = (
     "&order=Sales&ownership=Both&direction=DESC&showtotalsales=1&shownasales=1&showpalsales=1&showjapansales=1&"
-    "showothersales=1&showpublisher=1&showdeveloper=1&showreleasedate=1&showlastupdate=1&showvgchartzscore=0&showcriticscore=1"
+    "showothersales=1&showpublisher=1&showdeveloper=1&showreleasedate=1&showlastupdate=1&showvgchartzscore=1&showcriticscore=1"
     "&showuserscore=1&showshipped=1"
 )
 
@@ -67,6 +67,7 @@ df = pd.DataFrame(
         "Publisher",
         "Developer",
         "Genre",
+        "VGChartz Score",
         "Critic Score",
         "User Score",
         "Total Shipper",
@@ -373,6 +374,12 @@ def get_games():
             total_games += 1
             # Get the parent information
             parent_information = game.parent.parent.find_all("td")
+            # Code to debug and test what is what in the game results
+            # for x in range(0, len(parent_information)):
+            #     try:
+            #         print(f"{x}: {parent_information[x]}")
+            #     except:
+            #         print(f"{x}: ERROR")
             # Get the overall rank (Used for the "All" and "Series" data frame)
             rank = parent_information[0].string.strip()
             # Get box art information (from the image alt text, this is useless, but you can include it if you want)
@@ -383,33 +390,35 @@ def get_games():
             # Get the genre (Using a function, also I'll leave how to get the link from parent instead of the game object)
             game_link = game.attrs["href"].strip()
             ##game_link= parent_information[2].find("a").attrs["href"].strip()
+            genre = get_genre(game_link, game_name)
             # Get platform information (From the images alt text)
             platform = parent_information[3].find("img").attrs["alt"].strip()
             # Get publisher information (Simply from the string)
             publisher = parent_information[4].string.strip()
             # Get developer information (Simply from the string)
             developer = parent_information[5].string.strip()
-            genre = get_genre(game_link, game_name)
+            # Get the VGChartz Score (by using a function to test for N/A and convert to float)
+            vgchartz_score = float_covert(parent_information[6].string.strip())
             # Get critic score (by using a function to test for N/A and convert to float)
-            critic_score = float_covert(parent_information[6].string.strip())
+            critic_score = float_covert(parent_information[7].string.strip())
             # Get user score (by using a function to test for N/A and convert to float)
-            user_score = float_covert(parent_information[7].string.strip())
+            user_score = float_covert(parent_information[8].string.strip())
             # Get total shipped (by using a function to test for N/A and convert to float)
-            total_shipped = float_covert(parent_information[8].string.strip())
+            total_shipped = float_covert(parent_information[9].string.strip())
             # Get total sales (by using a function to test for N/A and convert to float)
-            total_sales = float_covert(parent_information[9].string.strip())
+            total_sales = float_covert(parent_information[10].string.strip())
             # Get north america sales (by using a function to test for N/A and convert to float)
-            na_sales = float_covert(parent_information[10].string.strip())
+            na_sales = float_covert(parent_information[11].string.strip())
             # Get pal sales (by using a function to test for N/A and convert to float)
-            pal_sales = float_covert(parent_information[11].string.strip())
+            pal_sales = float_covert(parent_information[12].string.strip())
             # Get japan sales (by using a function to test for N/A and convert to float)
-            japan_sales = float_covert(parent_information[12].string.strip())
+            japan_sales = float_covert(parent_information[13].string.strip())
             # Get other sales (by using a function to test for N/A and convert to float)
-            other_sales = float_covert(parent_information[13].string.strip())
+            other_sales = float_covert(parent_information[14].string.strip())
             # Get release date (by using a function to test for N/A and convert to date)
-            release_date = date_covert(parent_information[14].string.strip())
+            release_date = date_covert(parent_information[15].string.strip())
             # Get last update date (by using a function to test for N/A and convert to date)
-            last_update = date_covert(parent_information[15].string.strip())
+            last_update = date_covert(parent_information[16].string.strip())
             # Creating a data array for the "All" and "Series" data frame
             # Creating a data array
             data_all = np.array(
@@ -420,6 +429,7 @@ def get_games():
                     publisher,
                     developer,
                     genre,
+                    vgchartz_score,
                     critic_score,
                     user_score,
                     total_shipped,
@@ -453,6 +463,7 @@ def get_games():
                         publisher,
                         developer,
                         genre,
+                        vgchartz_score,
                         critic_score,
                         user_score,
                         total_shipped,
