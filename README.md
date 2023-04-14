@@ -12,17 +12,26 @@ This scrapes the VGCHARTZ website to get information about video game sales.
 
 You should be able to run it straight without making any changes. However, you may want to change the following parameters.
 
-## At the beginning of the script
-
 - pages
   - This sets the amount of pages you will request.
   - I would try to keep it around a maximum of 1,000 requests per page, but I'm not sure if there's actually a limit on the website. Just so that it isn't too large per page download.
 - results_per_page
   - This is how many results will show up per page.
   - Like I said I'd keep it at a maximum of 1,000 requests per page. The websites controls only go up to 200, but I haven't had any trouble requesting 1,000 and it's a large enough size for me.
-
-## In the get_list function
-
+- use_max_game
+  - This is used to toggle True or False if you want the script to end after a certain amount of "All" games.
+  - I have this set to True by default, because I am unsure if the script will crash once it reaches the end of the database.
+- max_game
+  - This is used to set the max number of games that the script will scan if use_max_game is set to True.
+  - I have this set at 62,674, because that is the number of entries on the database at the time of this script being written.
+  - Note that this will be the number of "All" games not "Kept" games.
+- use_specific_start
+  - This is used to True or False or True if you want the script to start from a specific "All" game in the database.
+- skipped_games
+  - This is used to set the amount of games to be skipped if use_specific_start is set to True.
+  - Note that this will be the number of "All" games not "Kept" games.
+- full_date
+  - This is used to toggle True or False if you want the dates to be recorded as YYYY-MM-DD or just YYYY respectively.
 - attempts
   - This is the amount of attempts that it will make before it crashes.
   - I have this at 40, but if you want it larger or smaller go ahead. If your internet is prone to going out I'd put it up a lot higher so that you don't crash when the internet goes out.
@@ -43,6 +52,17 @@ This script will output 4 different files
   - This is a log of all the events and errors that occurred in the script. As well as how long they took.
 - platforms.csv
   - This is a list of all the codes the website uses to represent the various platforms. As well as the actual platform names that accompany them.
+
+# I Crashed! What Do I Do?
+
+Fear not! I have added functionality to continue after a crash with hopefully no lost data.
+
+- Open your "all_games.csv" file and find the last "Rank" in it.
+  - Make sure that it's "all_games.csv" and not "kept_games.csv" or you will end up with duplicates.
+- In the code set the "skipped_games" value to that number.
+- Set "use_specific_start" to True.
+
+That should start scraping the website back at the next game.
 
 # Shout-Out
 

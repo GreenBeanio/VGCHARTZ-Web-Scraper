@@ -133,3 +133,4 @@ platforms.csv
 all_games.csv
 kept_games.csv
 log.txt
+.vscode/settings.json

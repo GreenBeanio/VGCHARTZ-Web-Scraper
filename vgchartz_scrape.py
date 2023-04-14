@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Import Packages
+# region Import Packages
 from bs4 import BeautifulSoup
 import numpy as np
 import pandas as pd
@@ -7,14 +7,33 @@ import requests
 import html5lib
 import datetime
 import time
+import os.path
 
+# endregion Import Packages
+# region User Parameters
 # Parameters to set for amount of results (The full database as of this script is 62,674 results)
 pages = 63
 results_per_page = 1000
 
-# Set to true if you want to use full dates instead of just the years
-full_date = False
+# Settings to set a maximum game (The full database as of this script is 62,674 results)
+use_max_game = True
+max_game = 62674
 
+# Setting to start from a specific page and game
+use_specific_start = False
+skipped_games = 0
+
+# Set to true if you want to use full dates instead of just the years
+full_date = True
+
+# Set the amount of attempts you want to wait for
+attempts = 40
+
+# Time to wait in between attempts in seconds (The failures will most likely be because a 429 too many requests issue)
+wait_time = 15
+
+# endregion User Parameters
+# region Set Parameters
 # Accepted games
 accepted_games = 0
 
@@ -29,9 +48,9 @@ url_head = "https://www.vgchartz.com/games/games.php?"
 url_pages = "page="
 url_results = "&results="
 url_tail = (
-    "&order=Sales&ownership=Both&direction=DESC&showtotalsales=1&shownasales=1&showpalsales=1&showjapansales=1"
+    "&order=Sales&ownership=Both&direction=DESC&showtotalsales=1&shownasales=1&showpalsales=1&showpalsales=1"
     "&showothersales=1&showpublisher=1&showdeveloper=1&showreleasedate=1&showlastupdate=1&showvgchartzscore=0&showcriticscore=1"
-    "&showuserscore=1&showshipped=1"
+    "&showuserscore=1&showstopper=1"
 )
 
 # Array of Platform Codes (Value to replace)
@@ -66,6 +85,8 @@ df_all = df.copy()
 df_platform = pd.DataFrame(columns=["Code", "Platform"])
 
 
+# endregion Static Parameters
+# region Conversion Functions
 # Function to convert string to float, check for N/A, and remove the m for millions
 def float_covert(str):
     result = ""
@@ -116,12 +137,10 @@ def date_covert(str):
     return result
 
 
+# endregion Conversion Functions
+# region Data Gathering & Processing
 # Function get a list from beautiful soup
 def get_list(url, request_type, pages_or_game):
-    # Set the amount of attempts you want to wait for
-    attempts = 40
-    # Time to wait inbetween attempts in seconds (The failures will most likely be because a 429 too many requests issue)
-    wait_time = 15
     # Track if it worked
     worked = False
     # Global string
@@ -140,7 +159,7 @@ def get_list(url, request_type, pages_or_game):
             soup = BeautifulSoup(r.content, "html5lib")
             # If we're getting the game information
             if request_type == "game":
-                # Storing the main reults in the main table
+                # Storing the main results in the main table
                 main_table = soup.find("div", attrs={"id": "generalBody"})
                 # Finding hyperlinks in the table
                 result = main_table.find_all("a")
@@ -148,7 +167,7 @@ def get_list(url, request_type, pages_or_game):
                 attempts = 0
                 # Set worked to true
                 worked = True
-            # If we're getitng the genre information
+            # If we're getting the genre information
             elif request_type == "genre":
                 # Find the table
                 game_table = soup.find("div", attrs={"id": "gameGenInfoBox"})
@@ -196,19 +215,19 @@ def get_list(url, request_type, pages_or_game):
             # Get output depending on type of crash
             if request_type == "games":
                 output_string = f"======================================================================================================================================================\n\
-                            The scrape of VGCHARTZ has broken at {crash}\
-                            \nBecause of an error retreiving game information\
-                            \n======================================================================================================================================================"
+                            The scrape of VGCHARTZ has broken at {crash}\n\
+                            Because of an error retrieving game information\n\
+                            ======================================================================================================================================================"
             elif request_type == "genre":
                 output_string = f"======================================================================================================================================================\n\
-                            The scrape of VGCHARTZ has broken at {crash}\
-                            \nBecause of an error retreiving genre information\
-                            \n======================================================================================================================================================"
+                            The scrape of VGCHARTZ has broken at {crash}\n\
+                            Because of an error retrieving genre information\n\
+                            ======================================================================================================================================================"
             elif request_type == "platform":
                 output_string = f"======================================================================================================================================================\n\
-                            The scrape of VGCHARTZ has broken at {crash}\
-                            \nBecause of an error retreiving platform information\
-                            \n======================================================================================================================================================"
+                            The scrape of VGCHARTZ has broken at {crash}\n\
+                            Because of an error retrieving platform information\n\
+                            ======================================================================================================================================================"
             # Write error that the scraper stopped working
             write_output(False, False)
             # Print the output
@@ -256,7 +275,7 @@ def get_genre(url, game):
         # Search through all the headers to find the Genre
         for h in h2:
             if h.string == "Genre":
-                # Find the genres next sibling which will have the infroamtion on it
+                # Find the genres next sibling which will have the information on it
                 result = h.next_sibling.string.strip()
     # If it couldn't get the genre for some reason set it as nan
     except:
@@ -273,16 +292,50 @@ def get_games():
     # Running totals
     elapsed_pages = 0
     elapsed_games = 0
+    # For keeping totals with skipped
+    total_pages = 0
+    total_games = 0
+    # Current gets
+    current_pages = 0
+    current_games = total_results
     # Getting start time
     total_start_time = time.time()
     # Calling the function to get the platforms
     get_platforms()
+    # Variable to indicate starting page (0 by default) and games to skip (0 by default)
+    start_page = 0
+    games_skip = 0
+    # Set starting page if you're starting from a specific point
+    if use_specific_start == True:
+        # Get the amount of pages to skip
+        page_skip_parts = np.modf(skipped_games / results_per_page)
+        # Change the start page if using it (Have to subtract 1 because it adds one later)
+        start_page = int(page_skip_parts[1])
+        # Set the games_skip if using it
+        games_skip = int(page_skip_parts[0] * results_per_page)
+        # Setting total counts
+        total_pages = start_page
+        total_games = games_skip + (results_per_page * total_pages)
+        current_pages = pages - start_page
+        current_games = total_results - total_games
+        # Check that it wouldn't be past the max games
+        if use_max_game == True and total_games + 1 >= max_game:
+            finished = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
+            output_string = f"======================================================================================================================================================\n\
+                            The scrape of VGCHARTZ has finished at {finished}\n\
+                            You silly goose you're skipping more than your max!\n\
+                            ======================================================================================================================================================"
+            write_output(False, False)
+            print(output_string)
+            exit()
     # Loop for every page you want to search
-    for page in range(1, pages + 1):
+    for page in range(start_page + 1, pages + 1):
         # Getting time
         page_start_time = time.time()
-        # Elapse Page (Pretty sure this could just be page, it's not like the games ocunter, oh well doesn't really matter)
+        # Elapse Pages
         elapsed_pages += 1
+        # Increasing total pages
+        total_pages += 1
         # Getting current url to search
         url = (
             url_head
@@ -293,14 +346,19 @@ def get_games():
             + url_tail
         )
         # Call the function to get results from the webpage
-        all_hyperlinks = get_list(url, "game", elapsed_pages)
+        all_hyperlinks = get_list(
+            url, "game", total_pages
+        )  ## I think total not elapsed
         # Finding hyperlinks that contain games
         game_hyperlinks = []
         for i in all_hyperlinks:
             if "href" in i.attrs:
                 if i.attrs["href"].startswith("https://www.vgchartz.com/game/"):
                     game_hyperlinks.append(i)
-
+        # If you're skipping games
+        if elapsed_pages == 1 and use_specific_start == True:
+            # Remove the amount to skip games from the result
+            game_hyperlinks = game_hyperlinks[games_skip:]
         # Getting stats for each game
         for game in game_hyperlinks:
             # Track if game is kept
@@ -309,6 +367,8 @@ def get_games():
             game_start_time = time.time()
             # Elapse game
             elapsed_games += 1
+            # Elapse total games
+            total_games += 1
             # Get the parent information
             parent_information = game.parent.parent.find_all("td")
             # Get platform information (From the images alt text)
@@ -420,7 +480,7 @@ def get_games():
                 "%H:%M:%S", time.gmtime(total_elapsed_time)
             )
             # Output string
-            output_string = f"Page: {elapsed_pages}/{pages} | Game: {elapsed_games}/{total_results} | Kept Games: {accepted_games}\{elapsed_games} | Game Took: {elapsed_game_print} | Page: Took: {elapsed_page_print} | Total Elapsed: {elapsed_total_print}"
+            output_string = f"Pages: {elapsed_pages}/{current_pages} | Total Pages: {total_pages}/{pages} | Games: {elapsed_games}/{current_games} | Total Games: {total_games}/{total_results} | Kept Games: {accepted_games}\{current_games} | Game Took: {elapsed_game_print} | Page: Took: {elapsed_page_print} | Total Elapsed: {elapsed_total_print}"
             # Write to log
             if kept_game == True:
                 # Write to csv if the game was kept
@@ -430,14 +490,28 @@ def get_games():
                 write_output(True, False)
             # Printing the output
             print(output_string)
+            # If using a max game (stop the program now)
+            if use_max_game == True and total_games == max_game:
+                finished = time.strftime(
+                    "%Y-%m-%d %H:%M:%S", time.localtime(time.time())
+                )
+                output_string = f"======================================================================================================================================================\n\
+                    The scrape finished at: {finished} with the follow stats\n\
+                    Pages: {elapsed_pages}/{current_pages} | Total Pages: {total_pages}/{pages} | Games: {elapsed_games}/{current_games} | Total Games: {total_games}/{total_results} | Kept Games: {accepted_games}\{current_games} | Game Took: {elapsed_game_print} | Page: Took: {elapsed_page_print} | Total Elapsed: {elapsed_total_print}"
+                write_output(False, False)
+                print(output_string)
+                exit()
     # Write the final output string if it didn't crash before this
     finished = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
     output_string = f"======================================================================================================================================================\n\
-                    The scrape finished at: {finished} with the follow stats\
-                    Page: {elapsed_pages}/{pages}\nGame: {elapsed_games}/{total_results}\nKept Games: {accepted_games}\{elapsed_games}\nTotal Elapsed: {elapsed_total_print}"
+                    The scrape finished at: {finished} with the follow stats\n\
+                    Pages: {elapsed_pages}/{current_pages} | Total Pages: {total_pages}/{pages} | Games: {elapsed_games}/{current_games} | Total Games: {total_games}/{total_results} | Kept Games: {accepted_games}\{current_games} | Game Took: {elapsed_game_print} | Page: Took: {elapsed_page_print} | Total Elapsed: {elapsed_total_print}"
     write_output(False, False)
+    print(output_string)
 
 
+# endregion Data Gathering & Processing
+# region Outputs
 # Writing Output Files
 def write_output(write_csv, keep_games):
     # Write csv if true
@@ -488,30 +562,34 @@ def save_platforms():
         na_rep="N/A",
         mode="w",
     )
-    # Save the initial csv for the other csv as well (so that they'll have headers)
+    # Save the initial csv (if they don't exist) for the other csv as well (so that they'll have headers)
     # For the kept games
-    df.to_csv(
-        "kept_games.csv",
-        sep=",",
-        encoding="utf-8-sig",
-        index=False,
-        header=True,
-        na_rep="N/A",
-        mode="w",
-    )
+    if os.path.isfile("kept_games.csv") == False:
+        df.to_csv(
+            "kept_games.csv",
+            sep=",",
+            encoding="utf-8-sig",
+            index=False,
+            header=True,
+            na_rep="N/A",
+            mode="w",
+        )
     # For the all csv
-    df_all.to_csv(
-        "all_games.csv",
-        sep=",",
-        encoding="utf-8-sig",
-        index=False,
-        header=True,
-        na_rep="N/A",
-        mode="w",
-    )
+    if os.path.isfile("all_games.csv") == False:
+        df_all.to_csv(
+            "all_games.csv",
+            sep=",",
+            encoding="utf-8-sig",
+            index=False,
+            header=True,
+            na_rep="N/A",
+            mode="w",
+        )
 
 
-# Run the scrape with a keybaord interrupt
+# endregion Outputs
+# region Starting Point
+# Run the scrape with a keyboard interrupt
 try:
     # Get the games
     get_games()
@@ -521,4 +599,6 @@ except KeyboardInterrupt:
     cancelled = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
     output_string = f"======================================================================================================================================================\n\
                     The user has cancelled the scrape of VGCHARTZ at {cancelled}"
+    print(output_string)
     write_output(False, False)
+# endregion Starting Point
