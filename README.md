@@ -66,6 +66,7 @@ Fear not! I have added functionality to continue after a crash with hopefully no
 
 - Open your "all_games.csv" file and find the last "Rank" in it.
   - Make sure that it's "all_games.csv" and not "kept_games.csv" or you will end up with duplicates.
+  - The only error that will need addressed is that "kept_games.csv" will lose track of the "Rank" position and it will need to be reordered after data collection is finished. This should be as easy as counting the rows and putting the value back into the "Rank" column.
 - In the code set the "skipped_games" value to that number.
 - Set "use_specific_start" to True.
 
