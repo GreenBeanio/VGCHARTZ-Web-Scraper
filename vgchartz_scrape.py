@@ -720,6 +720,11 @@ def write_output(write_csv, keep_games):
 
 # Saving what we collected to a csv
 def save_platforms():
+    # Write starting line to the log
+    with open("Output/log.txt", "a") as f:
+        f.write(
+            "======================================================================================================================================================"
+        )
     # Save the platform information
     df_platform.to_csv(
         "Output/platforms.csv",
