@@ -134,3 +134,6 @@ all_games.csv
 kept_games.csv
 log.txt
 .vscode/settings.json
+hardware.csv
+software.csv
+tie_ratio.csv

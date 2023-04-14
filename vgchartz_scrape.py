@@ -43,7 +43,7 @@ total_results = pages * results_per_page
 # String for holding the output text
 output_string = ""
 
-# URL Strings
+# Main Game URL Strings
 url_head = "https://www.vgchartz.com/games/games.php?"
 url_pages = "page="
 url_results = "&results="
@@ -52,6 +52,10 @@ url_tail = (
     "showothersales=1&showpublisher=1&showdeveloper=1&showreleasedate=1&showlastupdate=1&showvgchartzscore=1&showcriticscore=1"
     "&showuserscore=1&showshipped=1"
 )
+# Other URLS
+hardware_url = "https://www.vgchartz.com/charts/platform_totals/Hardware.php"
+software_url = "https://www.vgchartz.com/charts/platform_totals/Software.php"
+tie_ratio_url = "https://www.vgchartz.com/charts/platform_totals/TieRatio.php"
 
 # Array of Platform Codes (Value to replace)
 codes = np.array([np.nan, "nan", np.empty, ""])
@@ -84,6 +88,34 @@ df = pd.DataFrame(
 df_all = df.copy()
 # Create a data frame to store the platforms
 df_platform = pd.DataFrame(columns=["Code", "Platform"])
+# Create a data frame to store the Hardware
+df_hardware = pd.DataFrame(
+    columns=[
+        "Position",
+        "Platform",
+        "North America",
+        "Europe",
+        "Japan",
+        "Rest of the World",
+        "Global",
+    ]
+)
+# Create a data frame to store the Software
+df_software = pd.DataFrame(
+    columns=[
+        "Position",
+        "Platform",
+        "Global",
+    ]
+)
+# Create a data frame to store the Tie-Ratio
+df_tie_ratio = pd.DataFrame(
+    columns=[
+        "Position",
+        "Platform",
+        "Ratio",
+    ]
+)
 
 
 # endregion Static Parameters
@@ -95,10 +127,13 @@ def float_covert(str):
     if "N/A" in str:
         result = np.nan
     else:
-        # If the string contains "m" remove the m and converts
+        # If the string contains "m" remove the m and convert
         if "m" in str:
             result = np.float64(str[:-1])
-        # If it doesn't contain "m" just convert
+        # If the string contains a comma remove it and convert
+        elif "," in str:
+            result = np.float64(str.replace(",", ""))
+        # If it doesn't contain an "m" or a "," just convert
         else:
             result = np.float64(str)
         # if the value is 0 set it to nothing instead
@@ -191,6 +226,21 @@ def get_list(url, request_type, pages_or_game):
                 attempts = 0
                 # Set worked to true
                 worked = True
+            elif (
+                request_type == "hardware"
+                or request_type == "software"
+                or request_type == "tie-ratio"
+            ):
+                # Storing the main results in the main table
+                general_table = soup.find("table", attrs={"id": "myTable"})
+                # Finding rows in the table
+                result = general_table.find_all("tr")
+                # Get rid of the header row from the table
+                result = result[1:]
+                # Set attempt to 0
+                attempts = 0
+                # Set worked to true
+                worked = True
         # If we don't get the information we were looking for
         except:
             if request_type == "game":
@@ -203,6 +253,12 @@ def get_list(url, request_type, pages_or_game):
                 )
             elif request_type == "platform":
                 output_string = f"Error getting platform information"
+            elif request_type == "hardware":
+                output_string = f"Error getting hardware information"
+            elif request_type == "software":
+                output_string = f"Error getting software information"
+            elif request_type == "tie-ratio":
+                output_string = f"Error getting tie-ratio information"
             # Write to log
             write_output(False, False)
             # Print error
@@ -244,6 +300,8 @@ def get_list(url, request_type, pages_or_game):
 
 # Function to get the platform codes and names
 def get_platforms():
+    # For writing output
+    global output_string
     # Global values to modify the arrays
     global codes
     global platforms
@@ -263,8 +321,12 @@ def get_platforms():
     # Add to dataframe (Getting rid of the 4 values we added before for nan values and such that aren't platforms)
     df_platform["Code"] = codes[4:].tolist()
     df_platform["Platform"] = platforms[4:].tolist()
-    # Save to a csv
-    save_platforms()
+    # Set output string
+    output_string = "Successfully got platform information"
+    # Write to log
+    write_output(False, False)
+    # Print error
+    print(output_string)
 
 
 # Function to get the genre of a game
@@ -287,6 +349,72 @@ def get_genre(url, game):
     return result
 
 
+# Function to get the sales numbers
+def get_sales(task):
+    # For writing output
+    global output_string
+    # Getting current url to search
+    if task == "hardware":
+        url = hardware_url
+    elif task == "software":
+        url = software_url
+    elif task == "tie-ratio":
+        url = tie_ratio_url
+    # Call the function to get results from the webpage
+    rows = get_list(url, task, "don't need")
+    # for every row in the table
+    for row in rows:
+        # Find the cells
+        cells = row.find_all("td")
+        # Get the position
+        position = cells[0].string.strip()
+        # Get the platform
+        platform_full = cells[1].string.strip()
+        # Split the platform name and platform code
+        platform_split = platform_full.split(" ")
+        platform = " ".join(platform_split[:-1]).strip()
+        # code = "".join(platform_split[-1:]).replace("(", "").replace(")", "").strip()
+        # The different ways for the different types
+        if task == "hardware":
+            # Get sales numbers
+            north_america = float_covert(cells[2].string.strip())
+            europe = float_covert(cells[3].string.strip())
+            japan = float_covert(cells[4].string.strip())
+            rest = float_covert(cells[5].string.strip())
+            _global = float_covert(cells[6].string.strip())
+            # Adding the data to an array
+            data = np.array(
+                [position, platform, north_america, europe, japan, rest, _global]
+            )
+            # Adding to  the data frame
+            df_hardware.loc[len(df_hardware.index)] = data
+        elif task == "software":
+            # Get sales numbers
+            _global = float_covert(cells[2].string.strip())
+            # Adding the data to an array
+            data = np.array([position, platform, _global])
+            # Adding to  the data frame
+            df_software.loc[len(df_software.index)] = data
+        elif task == "tie-ratio":
+            # Get the ratio (sales of software per hardware)
+            ratio = float_covert(cells[2].string.strip())
+            # Adding the data to an array
+            data = np.array([position, platform, ratio])
+            # Adding to  the data frame
+            df_tie_ratio.loc[len(df_tie_ratio.index)] = data
+    # Set output string
+    if task == "hardware":
+        output_string = "Successfully got hardware information"
+    elif task == "software":
+        output_string = "Successfully got software information"
+    elif task == "tie-ratio":
+        output_string = "Successfully got tie-ratio information"
+    # Write to log
+    write_output(False, False)
+    # Print error
+    print(output_string)
+
+
 # Function to get games
 def get_games():
     # Global variables
@@ -305,6 +433,12 @@ def get_games():
     total_start_time = time.time()
     # Calling the function to get the platforms
     get_platforms()
+    # Calling the function to get the other types of sales
+    get_sales("hardware")
+    get_sales("software")
+    get_sales("tie-ratio")
+    # Save the platforms and other sales
+    save_platforms()
     # Variable to indicate starting page (0 by default) and games to skip (0 by default)
     start_page = 0
     games_skip = 0
@@ -568,6 +702,36 @@ def save_platforms():
     # Save the platform information
     df_platform.to_csv(
         "platforms.csv",
+        sep=",",
+        encoding="utf-8-sig",
+        index=False,
+        header=True,
+        na_rep="N/A",
+        mode="w",
+    )
+    # Save the hardware information
+    df_hardware.to_csv(
+        "hardware.csv",
+        sep=",",
+        encoding="utf-8-sig",
+        index=False,
+        header=True,
+        na_rep="N/A",
+        mode="w",
+    )
+    # Save the software information
+    df_software.to_csv(
+        "software.csv",
+        sep=",",
+        encoding="utf-8-sig",
+        index=False,
+        header=True,
+        na_rep="N/A",
+        mode="w",
+    )
+    # Save the tie-ratio information
+    df_tie_ratio.to_csv(
+        "tie_ratio.csv",
         sep=",",
         encoding="utf-8-sig",
         index=False,
