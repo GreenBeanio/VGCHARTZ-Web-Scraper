@@ -454,6 +454,8 @@ def get_games():
     if use_max_game == True:
         # Set show total results to the max_game
         show_total_results = max_game
+        # Set current_games
+        current_games = show_total_results
         # Set the total pages to the xxx
         end_page = int(np.ceil(show_total_results / results_per_page))
 
