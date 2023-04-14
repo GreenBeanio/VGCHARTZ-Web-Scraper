@@ -434,7 +434,9 @@ def get_games():
     total_games = 0
     # Set current value defaults (that will be changed if using a specific start)
     current_pages = pages
+    end_page = pages
     current_games = total_results
+    show_total_results = total_results
     # Getting start time
     total_start_time = time.time()
     # Calling the function to get the platforms
@@ -448,6 +450,13 @@ def get_games():
     # Variable to indicate starting page (0 by default) and games to skip (0 by default)
     start_page = 0
     games_skip = 0
+    # If using a max game
+    if use_max_game == True:
+        # Set show total results to the max_game
+        show_total_results = max_game
+        # Set the total pages to the xxx
+        end_page = int(np.ceil(show_total_results / results_per_page))
+
     # Set starting page if you're starting from a specific point
     if use_specific_start == True:
         # Get the amount of pages to skip
@@ -459,8 +468,8 @@ def get_games():
         # Setting total counts
         total_pages = start_page
         total_games = games_skip + (results_per_page * total_pages)
-        current_pages = pages - start_page
-        current_games = total_results - total_games
+        current_pages = end_page - start_page
+        current_games = show_total_results - total_games
         # Check that it wouldn't be past the max games
         if use_max_game == True and total_games + 1 >= max_game:
             finished = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
@@ -472,7 +481,7 @@ def get_games():
             print(output_string)
             exit()
     # Loop for every page you want to search
-    for page in range(start_page + 1, pages + 1):
+    for page in range(start_page + 1, end_page + 1):
         # Getting time
         page_start_time = time.time()
         # Elapse Pages
@@ -639,7 +648,7 @@ def get_games():
                 "%H:%M:%S", time.gmtime(total_elapsed_time)
             )
             # Output string
-            output_string = f"Pages: {elapsed_pages}/{current_pages} | Total Pages: {total_pages}/{pages} | Games: {elapsed_games}/{current_games} | Total Games: {total_games}/{total_results} | Kept Games: {accepted_games}\{current_games} | Game Took: {elapsed_game_print} | Page: Took: {elapsed_page_print} | Total Elapsed: {elapsed_total_print}"
+            output_string = f"Pages: {elapsed_pages}/{current_pages} | Total Pages: {total_pages}/{end_page} | Games: {elapsed_games}/{current_games} | Total Games: {total_games}/{show_total_results} | Kept Games: {accepted_games}\{elapsed_games} | Game Took: {elapsed_game_print} | Page: Took: {elapsed_page_print} | Total Elapsed: {elapsed_total_print}"
             # Write to log
             if kept_game == True:
                 # Write to csv if the game was kept
@@ -656,7 +665,7 @@ def get_games():
                 )
                 output_string = f"======================================================================================================================================================\n\
                     The scrape finished at: {finished} with the follow stats\n\
-                    Pages: {elapsed_pages}/{current_pages} | Total Pages: {total_pages}/{pages} | Games: {elapsed_games}/{current_games} | Total Games: {total_games}/{total_results} | Kept Games: {accepted_games}\{current_games} | Game Took: {elapsed_game_print} | Page: Took: {elapsed_page_print} | Total Elapsed: {elapsed_total_print}"
+                    Pages: {elapsed_pages}/{current_pages} | Total Pages: {total_pages}/{end_page} | Games: {elapsed_games}/{current_games} | Total Games: {total_games}/{show_total_results} | Kept Games: {accepted_games}\{elapsed_games} | Game Took: {elapsed_game_print} | Page: Took: {elapsed_page_print} | Total Elapsed: {elapsed_total_print}"
                 write_output(False, False)
                 print(output_string)
                 exit()
@@ -664,7 +673,7 @@ def get_games():
     finished = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
     output_string = f"======================================================================================================================================================\n\
                     The scrape finished at: {finished} with the follow stats\n\
-                    Pages: {elapsed_pages}/{current_pages} | Total Pages: {total_pages}/{pages} | Games: {elapsed_games}/{current_games} | Total Games: {total_games}/{total_results} | Kept Games: {accepted_games}\{current_games} | Game Took: {elapsed_game_print} | Page: Took: {elapsed_page_print} | Total Elapsed: {elapsed_total_print}"
+                    Pages: {elapsed_pages}/{current_pages} | Total Pages: {total_pages}/{end_page} | Games: {elapsed_games}/{current_games} | Total Games: {total_games}/{show_total_results} | Kept Games: {accepted_games}\{elapsed_games} | Game Took: {elapsed_game_print} | Page: Took: {elapsed_page_print} | Total Elapsed: {elapsed_total_print}"
     write_output(False, False)
     print(output_string)
 
