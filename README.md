@@ -32,7 +32,7 @@ You should be able to run it straight without making any changes. However, you m
   - Note that this will be the number of "All" games not "Kept" games.
 - full_date
   - This is used to toggle True or False if you want the dates to be recorded as YYYY-MM-DD or just YYYY respectively.
-- attempts
+- set_attempts
   - This is the amount of attempts that it will make before it crashes.
   - I have this at 40, but if you want it larger or smaller go ahead. If your internet is prone to going out I'd put it up a lot higher so that you don't crash when the internet goes out.
 - wait_time

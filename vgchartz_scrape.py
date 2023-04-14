@@ -27,7 +27,7 @@ skipped_games = 0
 full_date = True
 
 # Set the amount of attempts you want to wait for
-attempts = 40
+set_attempts = 40
 
 # Time to wait in between attempts in seconds (The failures will most likely be because a 429 too many requests issue)
 wait_time = 15
@@ -48,9 +48,9 @@ url_head = "https://www.vgchartz.com/games/games.php?"
 url_pages = "page="
 url_results = "&results="
 url_tail = (
-    "&order=Sales&ownership=Both&direction=DESC&showtotalsales=1&shownasales=1&showpalsales=1&showpalsales=1"
-    "&showothersales=1&showpublisher=1&showdeveloper=1&showreleasedate=1&showlastupdate=1&showvgchartzscore=0&showcriticscore=1"
-    "&showuserscore=1&showstopper=1"
+    "&order=Sales&ownership=Both&direction=DESC&showtotalsales=1&shownasales=1&showpalsales=1&showjapansales=1&"
+    "showothersales=1&showpublisher=1&showdeveloper=1&showreleasedate=1&showlastupdate=1&showvgchartzscore=0&showcriticscore=1"
+    "&showuserscore=1&showshipped=1"
 )
 
 # Array of Platform Codes (Value to replace)
@@ -141,6 +141,8 @@ def date_covert(str):
 # region Data Gathering & Processing
 # Function get a list from beautiful soup
 def get_list(url, request_type, pages_or_game):
+    # Get attempts from the set_attempts
+    attempts = set_attempts
     # Track if it worked
     worked = False
     # Global string
@@ -371,8 +373,6 @@ def get_games():
             total_games += 1
             # Get the parent information
             parent_information = game.parent.parent.find_all("td")
-            # Get platform information (From the images alt text)
-            platform = parent_information[3].find("img").attrs["alt"].strip()
             # Get the overall rank (Used for the "All" and "Series" data frame)
             rank = parent_information[0].string.strip()
             # Get box art information (from the image alt text, this is useless, but you can include it if you want)
@@ -380,13 +380,15 @@ def get_games():
             # Get the game name (From the game object, not the parent, but I'll leave that option here as well)
             game_name = game.string.strip()
             ##game_name = parent_information[2].find("a").string.strip()
+            # Get the genre (Using a function, also I'll leave how to get the link from parent instead of the game object)
+            game_link = game.attrs["href"].strip()
+            ##game_link= parent_information[2].find("a").attrs["href"].strip()
+            # Get platform information (From the images alt text)
+            platform = parent_information[3].find("img").attrs["alt"].strip()
             # Get publisher information (Simply from the string)
             publisher = parent_information[4].string.strip()
             # Get developer information (Simply from the string)
             developer = parent_information[5].string.strip()
-            # Get the genre (Using a function, also I'll leave how to get the link from parent instead of the game object)
-            game_link = game.attrs["href"].strip()
-            ##game_link= parent_information[2].find("a").attrs["href"].strip()
             genre = get_genre(game_link, game_name)
             # Get critic score (by using a function to test for N/A and convert to float)
             critic_score = float_covert(parent_information[6].string.strip())
