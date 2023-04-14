@@ -298,8 +298,8 @@ def get_games():
     # For keeping totals with skipped
     total_pages = 0
     total_games = 0
-    # Current gets
-    current_pages = 0
+    # Set current value defaults (that will be changed if using a specific start)
+    current_pages = pages
     current_games = total_results
     # Getting start time
     total_start_time = time.time()
@@ -358,7 +358,7 @@ def get_games():
             if "href" in i.attrs:
                 if i.attrs["href"].startswith("https://www.vgchartz.com/game/"):
                     game_hyperlinks.append(i)
-        # If you're skipping games
+        # If you're skipping games remove some games from the results, if not leave it alone
         if elapsed_pages == 1 and use_specific_start == True:
             # Remove the amount to skip games from the result
             game_hyperlinks = game_hyperlinks[games_skip:]
