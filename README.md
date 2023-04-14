@@ -42,7 +42,7 @@ You should be able to run it straight without making any changes. However, you m
 
 # Outputs
 
-This script will output 4 different files
+This script will output 7 different files to the directory "Output". All numerical units are in millions, except for the tie ratio.
 
 - kept_games.csv
   - This is a csv file will all the games in the database, except for games with the platform "All" and "Series". I don't personally think that seeing the statistics for a game across "All" the platforms on is useful for my purposes. I also don't think it's useful to have the statistics for the game "Series" as a whole.
@@ -51,7 +51,14 @@ This script will output 4 different files
 - log.txt
   - This is a log of all the events and errors that occurred in the script. As well as how long they took.
 - platforms.csv
-  - This is a list of all the codes the website uses to represent the various platforms. As well as the actual platform names that accompany them.
+  - This is a csv of all the codes the website uses to represent the various platforms. As well as the actual platform names that accompany them.
+- hardware.csv
+  - This is a csv of the sales information of the different hardware platforms.
+- software.csv
+  - This is a csv of the sales information of the different software for the platforms.
+- tie_ratio.csv
+  - This is a csv of the tie-ratio for the hardware and software of the platforms.
+  - The tie-ratio is how many pieces of software were sold for each piece of hardware.
 
 # I Crashed! What Do I Do?
 

@@ -57,10 +57,12 @@ hardware_url = "https://www.vgchartz.com/charts/platform_totals/Hardware.php"
 software_url = "https://www.vgchartz.com/charts/platform_totals/Software.php"
 tie_ratio_url = "https://www.vgchartz.com/charts/platform_totals/TieRatio.php"
 
+# Array with unwanted values to replace with "N/A"
+unwanted = np.array([np.nan, "nan", np.empty, ""])
 # Array of Platform Codes (Value to replace)
-codes = np.array([np.nan, "nan", np.empty, ""])
+codes = np.array([])
 # Array of Platform Names (Value to be replace with)
-platforms = np.array(["N/A", "N/A", "N/A", "N/A"])
+platforms = np.array([])
 
 # Create a data frame to store the output without the "All" or "Series"
 df = pd.DataFrame(
@@ -68,13 +70,14 @@ df = pd.DataFrame(
         "Rank",
         "Name",
         "Platform",
+        "Code",
         "Publisher",
         "Developer",
         "Genre",
         "VGChartz Score",
         "Critic Score",
         "User Score",
-        "Total Shipper",
+        "Total Shipped",
         "Total Sales",
         "NA Sales",
         "PAL Sales",
@@ -93,6 +96,7 @@ df_hardware = pd.DataFrame(
     columns=[
         "Position",
         "Platform",
+        "Code",
         "North America",
         "Europe",
         "Japan",
@@ -105,6 +109,7 @@ df_software = pd.DataFrame(
     columns=[
         "Position",
         "Platform",
+        "Code",
         "Global",
     ]
 )
@@ -113,6 +118,7 @@ df_tie_ratio = pd.DataFrame(
     columns=[
         "Position",
         "Platform",
+        "Code",
         "Ratio",
     ]
 )
@@ -318,9 +324,9 @@ def get_platforms():
         # Adding the values to arrays
         codes = np.append(codes, code)
         platforms = np.append(platforms, name)
-    # Add to dataframe (Getting rid of the 4 values we added before for nan values and such that aren't platforms)
-    df_platform["Code"] = codes[4:].tolist()
-    df_platform["Platform"] = platforms[4:].tolist()
+    # Add to dataframe
+    df_platform["Code"] = codes.tolist()
+    df_platform["Platform"] = platforms.tolist()
     # Set output string
     output_string = "Successfully got platform information"
     # Write to log
@@ -373,7 +379,7 @@ def get_sales(task):
         # Split the platform name and platform code
         platform_split = platform_full.split(" ")
         platform = " ".join(platform_split[:-1]).strip()
-        # code = "".join(platform_split[-1:]).replace("(", "").replace(")", "").strip()
+        code = "".join(platform_split[-1:]).replace("(", "").replace(")", "").strip()
         # The different ways for the different types
         if task == "hardware":
             # Get sales numbers
@@ -384,7 +390,7 @@ def get_sales(task):
             _global = float_covert(cells[6].string.strip())
             # Adding the data to an array
             data = np.array(
-                [position, platform, north_america, europe, japan, rest, _global]
+                [position, platform, code, north_america, europe, japan, rest, _global]
             )
             # Adding to  the data frame
             df_hardware.loc[len(df_hardware.index)] = data
@@ -392,14 +398,14 @@ def get_sales(task):
             # Get sales numbers
             _global = float_covert(cells[2].string.strip())
             # Adding the data to an array
-            data = np.array([position, platform, _global])
+            data = np.array([position, platform, code, _global])
             # Adding to  the data frame
             df_software.loc[len(df_software.index)] = data
         elif task == "tie-ratio":
             # Get the ratio (sales of software per hardware)
             ratio = float_covert(cells[2].string.strip())
             # Adding the data to an array
-            data = np.array([position, platform, ratio])
+            data = np.array([position, platform, code, ratio])
             # Adding to  the data frame
             df_tie_ratio.loc[len(df_tie_ratio.index)] = data
     # Set output string
@@ -525,8 +531,12 @@ def get_games():
             game_link = game.attrs["href"].strip()
             ##game_link= parent_information[2].find("a").attrs["href"].strip()
             genre = get_genre(game_link, game_name)
-            # Get platform information (From the images alt text)
-            platform = parent_information[3].find("img").attrs["alt"].strip()
+            # Get platform code (From the images alt text)
+            platform_code = parent_information[3].find("img").attrs["alt"].strip()
+            # Getting the platform name (By replacing the platform code with it's full name)
+            platform = pd.Series(np.array([platform_code]))
+            platform = platform.replace(codes, platforms)
+            platform = platform[0]
             # Get publisher information (Simply from the string)
             publisher = parent_information[4].string.strip()
             # Get developer information (Simply from the string)
@@ -560,6 +570,7 @@ def get_games():
                     rank,
                     game_name,
                     platform,
+                    platform_code,
                     publisher,
                     developer,
                     genre,
@@ -594,6 +605,7 @@ def get_games():
                         accepted_games,
                         game_name,
                         platform,
+                        platform_code,
                         publisher,
                         developer,
                         genre,
@@ -665,11 +677,11 @@ def write_output(write_csv, keep_games):
     if write_csv == True:
         # If we're writing to a game we kept
         if keep_games == True:
-            # Replace platform codes with names
-            df.loc[df.index[-1] :] = df.loc[df.index[-1] :].replace(codes, platforms)
+            # Replace the unwanted values with "N/A"
+            df.loc[df.index[-1] :] = df.loc[df.index[-1] :].replace(unwanted, "N/A")
             # Write the df to csv
             df.loc[df.index[-1] :].to_csv(
-                "kept_games.csv",
+                "Output/kept_games.csv",
                 sep=",",
                 encoding="utf-8-sig",
                 index=False,
@@ -680,11 +692,11 @@ def write_output(write_csv, keep_games):
         # Writing to the all csv either way
         # Replace platform codes with names
         df_all.loc[df_all.index[-1] :] = df_all.loc[df_all.index[-1] :].replace(
-            codes, platforms
+            unwanted, "N/A"
         )
         # Write the df to csv
         df_all.loc[df_all.index[-1] :].to_csv(
-            "all_games.csv",
+            "Output/all_games.csv",
             sep=",",
             encoding="utf-8-sig",
             index=False,
@@ -693,7 +705,7 @@ def write_output(write_csv, keep_games):
             mode="a",
         )
     # Write simple statistics to text file either way
-    with open("log.txt", "a") as f:
+    with open("Output/log.txt", "a") as f:
         f.write("\n" + output_string)
 
 
@@ -701,7 +713,7 @@ def write_output(write_csv, keep_games):
 def save_platforms():
     # Save the platform information
     df_platform.to_csv(
-        "platforms.csv",
+        "Output/platforms.csv",
         sep=",",
         encoding="utf-8-sig",
         index=False,
@@ -711,7 +723,7 @@ def save_platforms():
     )
     # Save the hardware information
     df_hardware.to_csv(
-        "hardware.csv",
+        "Output/hardware.csv",
         sep=",",
         encoding="utf-8-sig",
         index=False,
@@ -721,7 +733,7 @@ def save_platforms():
     )
     # Save the software information
     df_software.to_csv(
-        "software.csv",
+        "Output/software.csv",
         sep=",",
         encoding="utf-8-sig",
         index=False,
@@ -731,7 +743,7 @@ def save_platforms():
     )
     # Save the tie-ratio information
     df_tie_ratio.to_csv(
-        "tie_ratio.csv",
+        "Output/tie_ratio.csv",
         sep=",",
         encoding="utf-8-sig",
         index=False,
@@ -741,9 +753,9 @@ def save_platforms():
     )
     # Save the initial csv (if they don't exist) for the other csv as well (so that they'll have headers)
     # For the kept games
-    if os.path.isfile("kept_games.csv") == False:
+    if os.path.isfile("Output/kept_games.csv") == False:
         df.to_csv(
-            "kept_games.csv",
+            "Output/kept_games.csv",
             sep=",",
             encoding="utf-8-sig",
             index=False,
@@ -752,9 +764,9 @@ def save_platforms():
             mode="w",
         )
     # For the all csv
-    if os.path.isfile("all_games.csv") == False:
+    if os.path.isfile("Output/all_games.csv") == False:
         df_all.to_csv(
-            "all_games.csv",
+            "Output/all_games.csv",
             sep=",",
             encoding="utf-8-sig",
             index=False,
@@ -768,6 +780,9 @@ def save_platforms():
 # region Starting Point
 # Run the scrape with a keyboard interrupt
 try:
+    # Check for the output directory, and create it if it doesn't exist.
+    if os.path.exists("Output") == False:
+        os.mkdir("Output")
     # Get the games
     get_games()
 # If you need to stop for some reason all wont be lost if you do ctl + c
