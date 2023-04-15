@@ -293,6 +293,21 @@ def get_list(url, request_type, pages_or_game):
                             The scrape of VGCHARTZ has broken at {crash}\n\
                             Because of an error retrieving platform information\n\
                             ======================================================================================================================================================"
+            elif request_type == "hardware":
+                output_string = f"======================================================================================================================================================\n\
+                            The scrape of VGCHARTZ has broken at {crash}\n\
+                            Because of an error retrieving hardware information\n\
+                            ======================================================================================================================================================"
+            elif request_type == "software":
+                output_string = f"======================================================================================================================================================\n\
+                            The scrape of VGCHARTZ has broken at {crash}\n\
+                            Because of an error retrieving software information\n\
+                            ======================================================================================================================================================"
+            elif request_type == "tie-ratio":
+                output_string = f"======================================================================================================================================================\n\
+                            The scrape of VGCHARTZ has broken at {crash}\n\
+                            Because of an error retrieving tie ratio information\n\
+                            ======================================================================================================================================================"
             # Write error that the scraper stopped working
             write_output(False, False)
             # Print the output
@@ -805,7 +820,7 @@ try:
 except KeyboardInterrupt:
     # Write output saying the user cancelled it
     cancelled = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
-    output_string = f"======================================================================================================================================================\n\
+    output_string = f"\n======================================================================================================================================================\n\
                     The user has cancelled the scrape of VGCHARTZ at {cancelled}"
     print(output_string)
     write_output(False, False)
