@@ -743,7 +743,8 @@ def save_platforms():
             "======================================================================================================================================================"
         )
     # Save the platform information
-    df_platform.to_csv(
+    save_platform = df_platform.replace(unwanted, "N/A")
+    save_platform.to_csv(
         "Output/platforms.csv",
         sep=",",
         encoding="utf-8-sig",
@@ -753,7 +754,8 @@ def save_platforms():
         mode="w",
     )
     # Save the hardware information
-    df_hardware.to_csv(
+    save_hardware = df_hardware.replace(unwanted, "N/A")
+    save_hardware.to_csv(
         "Output/hardware.csv",
         sep=",",
         encoding="utf-8-sig",
@@ -763,7 +765,8 @@ def save_platforms():
         mode="w",
     )
     # Save the software information
-    df_software.to_csv(
+    save_software = df_software.replace(unwanted, "N/A")
+    save_software.to_csv(
         "Output/software.csv",
         sep=",",
         encoding="utf-8-sig",
@@ -773,7 +776,8 @@ def save_platforms():
         mode="w",
     )
     # Save the tie-ratio information
-    df_tie_ratio.to_csv(
+    save_tie_ratio = df_tie_ratio.replace(unwanted, "N/A")
+    save_tie_ratio.to_csv(
         "Output/tie_ratio.csv",
         sep=",",
         encoding="utf-8-sig",
