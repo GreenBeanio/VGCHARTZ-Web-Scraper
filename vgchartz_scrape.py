@@ -613,8 +613,11 @@ def get_games():
                     last_update,
                 ]
             )
-            # Adding to  the data frame ("All" & "Series")
-            df_all.loc[len(df_all.index)] = data_all
+            # Adding to  the data frame ("All" & "Series"). Replacing the first row, because we only need to store one row at a time.
+            # Instead of adding it to a new row like I did do before. I'm changing this to hopefully save on needed memory.
+            df_all.loc[0] = data_all
+            #df_all.loc[len(df_all.index)] = data_all
+
             # Checking if the platform is one of the platform types I don't want ("Series" and "All". They're not useful to analyze individual video games)
             # If the data isn't a "Series" or "All" continue, if not then just skip it
             # I have changed my mind on that, instead I will just save it to 2 csv, one with them and one without.
@@ -648,8 +651,10 @@ def get_games():
                         last_update,
                     ]
                 )
-                # Adding to  the data frame
-                df.loc[len(df.index)] = data
+                # Adding to  the data frame (Same change as above)
+                df.loc[0] = data
+                #df.loc[len(df.index)] = data
+
             # Get elapsed times
             current_time = time.time()
             elapsed_game_time = current_time - game_start_time
@@ -668,10 +673,10 @@ def get_games():
             output_string = f"Pages: {elapsed_pages}/{current_pages} | Total Pages: {total_pages}/{end_page} | Games: {elapsed_games}/{current_games} | Total Games: {total_games}/{show_total_results} | Kept Games: {accepted_games}\{elapsed_games} | Game Took: {elapsed_game_print} | Page: Took: {elapsed_page_print} | Total Elapsed: {elapsed_total_print}"
             # Write to log
             if kept_game == True:
-                # Write to csv if the game was kept
+                # Write to both csv if the game was kept
                 write_output(True, True)
             else:
-                # Only write to log if the game wasn't kept
+                # Only write to log and all games if the game wasn't kept
                 write_output(True, False)
             # Printing the output
             print(output_string)
@@ -704,9 +709,11 @@ def write_output(write_csv, keep_games):
         # If we're writing to a game we kept
         if keep_games == True:
             # Replace the unwanted values with "N/A"
-            df.loc[df.index[-1] :] = df.loc[df.index[-1] :].replace(unwanted, "N/A")
+            # "0" could be "df.index[-1]"" to get the last row, but since there's only 1 row using 0 should save a fraction of time not doing a calculation every time.
+            df.loc[0 :] = df.loc[0 :].replace(unwanted, "N/A")
+            #df.loc[df.index[-1] :] = df.loc[df.index[-1] :].replace(unwanted, "N/A")
             # Write the df to csv
-            df.loc[df.index[-1] :].to_csv(
+            df.loc[0 :].to_csv(
                 "Output/kept_games.csv",
                 sep=",",
                 encoding="utf-8-sig",
@@ -716,12 +723,12 @@ def write_output(write_csv, keep_games):
                 mode="a",
             )
         # Writing to the all csv either way
-        # Replace platform codes with names
-        df_all.loc[df_all.index[-1] :] = df_all.loc[df_all.index[-1] :].replace(
+        # Replace platform codes with names. Same thing with the "0" as above
+        df_all.loc[0 :] = df_all.loc[0 :].replace(
             unwanted, "N/A"
         )
         # Write the df to csv
-        df_all.loc[df_all.index[-1] :].to_csv(
+        df_all.loc[0 :].to_csv(
             "Output/all_games.csv",
             sep=",",
             encoding="utf-8-sig",
